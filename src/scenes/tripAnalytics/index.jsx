@@ -21,6 +21,7 @@ const TripAnalytics = () => {
     { label: "Most Active User", value: "Marcus Aurelius" },
     { label: "Average Speed", value: "35 km/h" },
     { label: "Most Visited Location", value: "SM Valenzuela" },
+        { label: "Most Motor Used", value: "Honda Click i125" },
   ];
 
   return (
