@@ -123,11 +123,11 @@ const Overview = () => {
       >
         <StatBox title="Total Users" value={userCount} />
         {/* <StatBox title= {{REACT_LOCALHOST_IP} + "HEYY "} value="120" /> */}
-        <StatBox title="Total Motors" value="0" />
+        <StatBox title="Total Motors Registered" value="10" />
         <StatBox title="Total Trips" value={totalTrips} />
 
         <StatBox title="New Users This Month" value={newUsersThisMonth} />
-        <StatBox title="Total Gas Consumption" value={"0L"} />
+        <StatBox title="Average Consumption per 10km" value={"1.3L"} />
         <StatBox title="Top Rider" value={topUser} />
       </Box>
 
