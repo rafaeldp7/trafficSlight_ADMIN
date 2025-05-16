@@ -8,7 +8,7 @@ import StatBox from "components/StatBox";
 
 
 
-const REACT_LOCALHOST_IP = "192.168.107.122";
+const REACT_LOCALHOST_IP = "https://ts-backend-1-jyit.onrender.com";
 
 console.log("localhost server: "+REACT_LOCALHOST_IP);
 const Overview = () => {
@@ -24,7 +24,7 @@ const Overview = () => {
   useEffect(() => {
     const fetchUserCount = async () => {
       try {
-        const res = await fetch(`http://${REACT_LOCALHOST_IP}:5000/api/auth/user-count`);
+        const res = await fetch(`${REACT_LOCALHOST_IP}/api/auth/user-count`);
         const data = await res.json();
         setUserCount(data.count);
       } catch (error) {
@@ -38,7 +38,7 @@ const Overview = () => {
   useEffect(() => {
     const fetchNewUsers = async () => {
       try {
-        const res = await fetch(`http://${REACT_LOCALHOST_IP}:5000/api/auth/new-users-this-month`);
+        const res = await fetch(`${REACT_LOCALHOST_IP}/api/auth/new-users-this-month`);
         const data = await res.json();
         setNewUsersThisMonth(data.count);
       } catch (error) {
@@ -52,7 +52,7 @@ const Overview = () => {
   useEffect(() => {
     const fetchTopUsers = async () => {
       try {
-        const res = await fetch(`http://${REACT_LOCALHOST_IP}:5000/api/auth/first-user-name`);
+        const res = await fetch(`${REACT_LOCALHOST_IP}/api/auth/first-user-name`);
         const data = await res.json();
         setTopUser(data.name);
       } catch (error) {
@@ -65,7 +65,7 @@ const Overview = () => {
   useEffect(() => {
     const fetchGasConsumption = async () => {
       try {
-        const res = await fetch(`http://${REACT_LOCALHOST_IP}:5000/api/gas-sessions/gasConsumption`);
+        const res = await fetch(`${REACT_LOCALHOST_IP}/api/gas-sessions/gasConsumption`);
         if (!res.ok) throw new Error("Network response was not ok");
 
         const data = await res.json();
@@ -81,7 +81,7 @@ const Overview = () => {
   useEffect(() => {
     const fetchUserGrowth = async () => {
       try {
-        const res = await fetch(`http://${REACT_LOCALHOST_IP}:5000/api/auth/user-growth`);
+        const res = await fetch(`${REACT_LOCALHOST_IP}/api/auth/user-growth`);
         const data = await res.json();
         setUserGrowth(data.monthlyData);
       } catch (error) {
@@ -94,7 +94,7 @@ const Overview = () => {
   useEffect(() => {
     const fetchTripsCount = async () => {
       try {
-        const res = await fetch(`http://${REACT_LOCALHOST_IP}:5000/api/gas-sessions/`);
+        const res = await fetch(`${REACT_LOCALHOST_IP}/api/gas-sessions/`);
         const data = await res.json();
         setTotalTrips(data.count);
       } catch (error) {

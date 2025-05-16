@@ -8,7 +8,7 @@ import Header from "components/Header";
 
 Chart.register(...registerables);
 
-const LOCALHOST_IP = "192.168.107.122";
+const LOCALHOST_IP = "https://ts-backend-1-jyit.onrender.com";
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]); // Dynamic user data
@@ -18,7 +18,7 @@ const UserManagement = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch(`http://${LOCALHOST_IP}:5000/api/auth/users`);
+        const res = await fetch(`http://${LOCALHOST_IP}/api/auth/users`);
         const data = await res.json();
 
         setUsers(data); // Set user list
