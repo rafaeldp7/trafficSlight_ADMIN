@@ -18,7 +18,7 @@ const UserManagement = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch(`http://${LOCALHOST_IP}/api/auth/users`);
+        const res = await fetch(`${LOCALHOST_IP}/api/auth/users`);
         const data = await res.json();
 
         setUsers(data); // Set user list
