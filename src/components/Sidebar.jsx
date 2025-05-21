@@ -31,6 +31,7 @@ const navItems = [
   { text: "User Management", text2:"UserManagement",icon: <People /> },
   { text: "Trip Analytics", text2:"TripAnalytics",icon: <BarChart /> },
   { text: "Maps And Traffic", text2:"MapsAndTraffic",icon: <Map /> },
+  { text: "Add Motor", text2:"addMotor",icon: <BarChart /> },
   // { text: "Reports", text2:"Reports",icon: <Report /> },
   // { text: "System Logs and Security", text2:"SystemLogsAndSecurity",icon: <Security /> },
   { text: "Settings", text2:"Settings",icon: <SettingsOutlined /> }
