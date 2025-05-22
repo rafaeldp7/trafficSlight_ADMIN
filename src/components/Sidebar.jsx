@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Divider,
@@ -12,29 +12,28 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import{
+import {
   ChevronLeft,
   ChevronRightOutlined,
   SettingsOutlined,
-  Dashboard, People, BarChart, Map, Report, Security 
-}
-from "@mui/icons-material";
-
-import { useEffect, useState } from "react";
+  Dashboard,
+  People,
+  BarChart,
+  Map,
+} from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import FlexBetween from "./FlexBetween";
-import profileImage from "assets/traffic-slight-logo-with-bg.png";
 import Image from "assets/traffic-slight.png";
 
 const navItems = [
-  { text: "Overview", text2:"overview",icon: <Dashboard /> },
-  { text: "User Management", text2:"UserManagement",icon: <People /> },
-  { text: "Trip Analytics", text2:"TripAnalytics",icon: <BarChart /> },
-  { text: "Maps And Traffic", text2:"MapsAndTraffic",icon: <Map /> },
-  { text: "Add Motor", text2:"addMotor",icon: <BarChart /> },
-  // { text: "Reports", text2:"Reports",icon: <Report /> },
-  // { text: "System Logs and Security", text2:"SystemLogsAndSecurity",icon: <Security /> },
-  { text: "Settings", text2:"Settings",icon: <SettingsOutlined /> }
+  { section: "Navigation" },
+  { text: "Overview", text2: "overview", icon: <Dashboard /> },
+  { text: "Maps And Traffic", text2: "MapsAndTraffic", icon: <Map /> },
+  { section: "Admin" },
+  { text: "User Management", text2: "UserManagement", icon: <People /> },
+  { text: "Add Motor", text2: "addMotor", icon: <People /> },
+  { section: "System" },
+  { text: "Settings", text2: "Settings", icon: <SettingsOutlined /> },
 ];
 
 const Sidebar = ({
@@ -51,7 +50,7 @@ const Sidebar = ({
 
   useEffect(() => {
     setActive(pathname.substring(1));
-  }, [pathname]); 
+  }, [pathname]);
 
   return (
     <Box component="nav">
@@ -73,21 +72,22 @@ const Sidebar = ({
           }}
         >
           <Box width="100%">
+            {/* Logo Section */}
             <Box m="1.5rem 2rem 2rem 3rem">
               <FlexBetween color={theme.palette.secondary.main}>
                 <Box display="flex" alignItems="center" gap="0.5rem">
-                <Box
-                component="img"
-                alt="profile"
-                src={Image}
-                height="100%"
-                width="100%"
-                 borderRadius="5px"
-                sx={{ objectFit: "cover" ,
-                  backgroundColor: theme.palette.primary[600],
-                 }}
-              />
-
+                  <Box
+                    component="img"
+                    alt="logo"
+                    src={Image}
+                    height="100%"
+                    width="100%"
+                    borderRadius="5px"
+                    sx={{
+                      objectFit: "cover",
+                      backgroundColor: theme.palette.primary[600],
+                    }}
+                  />
                 </Box>
                 {!isNonMobile && (
                   <IconButton onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
@@ -96,40 +96,53 @@ const Sidebar = ({
                 )}
               </FlexBetween>
             </Box>
+
+            {/* Navigation Items */}
             <List>
-              {navItems.map(({ text, text2,icon }) => {
-                if (!icon) {
+              {navItems.map(({ section, text, text2, icon }) => {
+                if (section) {
                   return (
-                    <Typography key={text} sx={{ m: "2.25rem 0 1rem 3rem" }}>
-                      {text}
+                    <Typography
+                      key={section}
+                      sx={{
+                        m: "2rem 0 1rem 2.5rem",
+                        fontSize: "0.85rem",
+                        color: theme.palette.secondary[300],
+                      }}
+                    >
+                      {section}
                     </Typography>
                   );
                 }
-                const lcText = text2.toLowerCase();
 
                 return (
                   <ListItem key={text2} disablePadding>
                     <ListItemButton
                       onClick={() => {
-                        navigate(`/${lcText}`);
-                        setActive(lcText);
+                        navigate(`/${text2}`);
+                        setActive(text2);
                       }}
                       sx={{
+                        borderLeft: active === text2
+                          ? `4px solid ${theme.palette.primary[600]}`
+                          : "4px solid transparent",
                         backgroundColor:
-                          active === lcText
+                          active === text2
                             ? theme.palette.secondary[300]
                             : "transparent",
                         color:
-                          active === lcText
+                          active === text2
                             ? theme.palette.primary[600]
                             : theme.palette.secondary[100],
+                        borderRadius: 0,
+                        pl: "1rem",
                       }}
                     >
                       <ListItemIcon
                         sx={{
-                          ml: "2rem",
+                          ml: "1rem",
                           color:
-                            active === lcText
+                            active === text2
                               ? theme.palette.primary[600]
                               : theme.palette.secondary[200],
                         }}
@@ -137,7 +150,7 @@ const Sidebar = ({
                         {icon}
                       </ListItemIcon>
                       <ListItemText primary={text} />
-                      {active === lcText && (
+                      {active === text2 && (
                         <ChevronRightOutlined sx={{ ml: "auto" }} />
                       )}
                     </ListItemButton>
@@ -146,8 +159,6 @@ const Sidebar = ({
               })}
             </List>
           </Box>
-
-          
         </Drawer>
       )}
     </Box>
