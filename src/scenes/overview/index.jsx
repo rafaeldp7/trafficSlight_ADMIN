@@ -3,112 +3,54 @@ import FlexBetween from "components/FlexBetween";
 import Header from "components/Header";
 import { Box, Typography, useMediaQuery } from "@mui/material";
 import { Line } from "react-chartjs-2";
-// import { REACT_APP_LOCALHOST_IP } from ".env";
 import StatBox from "components/StatBox";
-
-
 
 const REACT_LOCALHOST_IP = "https://ts-backend-1-jyit.onrender.com";
 
-console.log("localhost server: "+REACT_LOCALHOST_IP);
 const Overview = () => {
-  // const theme = useTheme();
   const isNonMediumScreens = useMediaQuery("(min-width: 1200px)");
 
   const [userCount, setUserCount] = useState(0);
   const [newUsersThisMonth, setNewUsersThisMonth] = useState(0);
   const [topUser, setTopUser] = useState(null);
-  const [userGrowth, setUserGrowth] = useState(Array(12).fill(0)); // Default 12 months, 0 users
-  const [totalTrips, setTotalTrips] = useState(0); // Total trips
-  const [totalGasConsumed, setTotalGasConsumed] = useState(0); // Total trips
+  const [userGrowth, setUserGrowth] = useState(Array(12).fill(0));
+  const [totalTrips, setTotalTrips] = useState(0);
+  const [totalMotors, setTotalMotors] = useState(0);
+  const [totalReports, setTotalReports] = useState(0);
+  const [totalMotorcycles, setTotalMotorcycles] = useState(0);
+  const [totalFuelLogs, setTotalFuelLogs] = useState(0);
+
   useEffect(() => {
-    const fetchUserCount = async () => {
+    const fetchCount = async (endpoint, setter, field = "count") => {
       try {
-        const res = await fetch(`${REACT_LOCALHOST_IP}/api/auth/user-count`);
+        const res = await fetch(`${REACT_LOCALHOST_IP}${endpoint}`);
         const data = await res.json();
-        setUserCount(data.count);
+        setter(data[field] ?? 0);
       } catch (error) {
-        console.error("Error fetching user count:", error);
+        console.error(`Error fetching ${endpoint}:`, error);
       }
     };
 
-    fetchUserCount();
-  }, []);
+    fetchCount("/api/auth/user-count", setUserCount, "count");
+    fetchCount("/api/auth/new-users-this-month", setNewUsersThisMonth, "count");
+    fetchCount("/api/auth/first-user-name", setTopUser, "name");
+    fetchCount("/api/trips/count", setTotalTrips, "totalTrips");
+    fetchCount("/api/user-motors/count", setTotalMotors, "totalUserMotors");
+    fetchCount("/api/reports/count", setTotalReports, "totalReports");
+    fetchCount("/api/motorcycles/count", setTotalMotorcycles, "totalMotorcycles");
+    fetchCount("/api/fuel-logs/count", setTotalFuelLogs, "totalFuelLogs");
 
-  useEffect(() => {
-    const fetchNewUsers = async () => {
-      try {
-        const res = await fetch(`${REACT_LOCALHOST_IP}/api/auth/new-users-this-month`);
-        const data = await res.json();
-        setNewUsersThisMonth(data.count);
-      } catch (error) {
-        console.error("Error fetching new users:", error);
-      }
-    };
-  
-    fetchNewUsers();
-  }, []);
-
-  useEffect(() => {
-    const fetchTopUsers = async () => {
-      try {
-        const res = await fetch(`${REACT_LOCALHOST_IP}/api/auth/first-user-name`);
-        const data = await res.json();
-        setTopUser(data.name);
-      } catch (error) {
-        console.error("Error fetching new users:", error);
-      }
-    };
-  
-    fetchTopUsers();
-  }, []);
-  useEffect(() => {
-    const fetchGasConsumption = async () => {
-      try {
-        const res = await fetch(`${REACT_LOCALHOST_IP}/api/gas-sessions/gasConsumption`);
-        if (!res.ok) throw new Error("Network response was not ok");
-
-        const data = await res.json();
-        setTotalGasConsumed(data.totalGasConsumed);
-      } catch (error) {
-        console.error("Error fetching gas consumption:", error);
-      }
-    };
-
-    fetchGasConsumption();
-  }, []);
-
-  useEffect(() => {
-    const fetchUserGrowth = async () => {
-      try {
-        const res = await fetch(`${REACT_LOCALHOST_IP}/api/auth/user-growth`);
-        const data = await res.json();
-        setUserGrowth(data.monthlyData);
-      } catch (error) {
-        console.error("Error fetching user growth:", error);
-      }
-    };
-  
-    fetchUserGrowth();
-  }, []);
-  useEffect(() => {
-    const fetchTripsCount = async () => {
-      try {
-        const res = await fetch(`${REACT_LOCALHOST_IP}/api/trips/count`);
-        const data = await res.json();
-        setTotalTrips(data.count);
-      } catch (error) {
-        console.error("Error fetching user count:", error);
-      }
-    };
-
-    fetchTripsCount();
+    // User growth chart data
+    fetch(`${REACT_LOCALHOST_IP}/api/auth/user-growth`)
+      .then((res) => res.json())
+      .then((data) => setUserGrowth(data.monthlyData))
+      .catch((err) => console.error("Error fetching user growth:", err));
   }, []);
 
   return (
     <Box m="1.5rem 2.5rem">
       <FlexBetween>
-        <Header title="Welcome, Admin!" subtitle=" " />
+        <Header title="Welcome, Admin!" subtitle="" />
       </FlexBetween>
 
       <Box
@@ -122,34 +64,38 @@ const Overview = () => {
         }}
       >
         <StatBox title="Total Users" value={userCount} />
-        {/* <StatBox title= {{REACT_LOCALHOST_IP} + "HEYY "} value="120" /> */}
-        <StatBox title="Total Motors Registered" value="10" />
+        <StatBox title="Total Motors Registered" value={totalMotors} />
         <StatBox title="Total Trips" value={totalTrips} />
-
+        <StatBox title="Fuel Logs Recorded" value={totalFuelLogs} />
         <StatBox title="New Users This Month" value={newUsersThisMonth} />
-        <StatBox title="Average Consumption per 10km" value={"1.3L"} />
-        <StatBox title="Top Rider" value={topUser} />
+        <StatBox title="Reports Submitted" value={totalReports} />
+        <StatBox title="Motorcycle Models" value={totalMotorcycles} />
+        <StatBox title="Top Rider" value={topUser ?? "N/A"} />
       </Box>
 
       <Box mt="40px" height="100%" width="100%" alignItems="center" justifyContent="center">
-        <FlexBetween><Typography variant="h2">User Growth</Typography></FlexBetween>
+        <FlexBetween>
+          <Typography variant="h2">User Growth</Typography>
+        </FlexBetween>
 
         <FlexBetween mt="20px" sx={{ backgroundColor: "white", borderRadius: "0.55rem" }}>
-          <Line data={{
-            labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-            datasets: [
-              {
-                label: "Users",
-                data: userGrowth,
-                fill: false,
-                backgroundColor: "#00ADB5",
-                borderColor: "#00ADB5",
-              },
-            ],
-          }} />
+          <Line
+            data={{
+              labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+              datasets: [
+                {
+                  label: "Users",
+                  data: userGrowth,
+                  fill: false,
+                  backgroundColor: "#00ADB5",
+                  borderColor: "#00ADB5",
+                },
+              ],
+            }}
+          />
         </FlexBetween>
       </Box>
-    </Box> 
+    </Box>
   );
 };
 
