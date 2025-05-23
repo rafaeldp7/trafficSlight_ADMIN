@@ -94,7 +94,7 @@ const Overview = () => {
   useEffect(() => {
     const fetchTripsCount = async () => {
       try {
-        const res = await fetch(`${REACT_LOCALHOST_IP}/api/gas-sessions/`);
+        const res = await fetch(`${REACT_LOCALHOST_IP}/api/trips/count`);
         const data = await res.json();
         setTotalTrips(data.count);
       } catch (error) {
