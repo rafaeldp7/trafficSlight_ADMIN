@@ -4,6 +4,28 @@ import Header from "components/Header";
 import { Box, Typography, useMediaQuery } from "@mui/material";
 import { Line } from "react-chartjs-2";
 import StatBox from "components/StatBox";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+
 
 const REACT_LOCALHOST_IP = "https://ts-backend-1-jyit.onrender.com";
 
