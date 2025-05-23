@@ -1,28 +1,71 @@
-import React from "react";
-import { Box, Typography, useTheme, Grid, Paper } from "@mui/material";
-import Header from "components/Header";
-import FlexBetween from "components/FlexBetween";
+import axios from 'axios';
+
+import React, { useEffect, useState } from 'react';
 
 const TripAnalytics = () => {
-  const theme = useTheme();
+  const [trips, setTrips] = useState([]);
+  const [stats, setStats] = useState([]);
+  const [monthlyStats, setMonthlyStats] = useState([]);
 
-  const stats = [
-    { label: "Total Distance Travelled", value: "2,398 km" },
-    { label: "Total Time Traveled", value: "291 mins" },
-    { label: "Total Gas Consumption", value: "127.1 L" },
-    { label: "Total Trips Recorded", value: "562" },
-  ];
+  useEffect(() => {
+    const fetchTrips = async () => {
+      try {
+        const response = await axios.get('https://ts-backend-1-jyit.onrender.com/api/trips');
+        const tripData = response.data;
+        setTrips(tripData);
+        computeStats(tripData);
+      } catch (error) {
+        console.error('Error fetching trip data:', error);
+      }
+    };
 
-  const monthlyStats = [
-    { label: "Total Gas Expense", value: "₱ 19,881" },
-    { label: "Total Trips Finished", value: "278" },
-    { label: "Distance Traveled", value: "287 km" },
-    { label: "Time Traveled", value: "1,092 mins" },
-    { label: "Most Active User", value: "Marcus Aurelius" },
-    { label: "Average Speed", value: "35 km/h" },
-    { label: "Most Visited Location", value: "SM Valenzuela" },
-        { label: "Most Motor Used", value: "Honda Click i125" },
-  ];
+    fetchTrips();
+  }, []);
+
+      const computeStats = (tripData) => {
+      // Overall Stats
+      const totalDistance = tripData.reduce((sum, trip) => sum + parseFloat(trip.distance || 0), 0);
+      const totalTime = tripData.reduce((sum, trip) => sum + parseFloat(trip.timeArrived || 0), 0);
+      const totalFuel = tripData.reduce((sum, trip) => sum + parseFloat(trip.fuelUsed || 0), 0);
+      const totalTrips = tripData.length;
+
+      setStats([
+        { label: 'Total Distance Travelled', value: `${totalDistance.toFixed(2)} km` },
+        { label: 'Total Time Traveled', value: `${totalTime.toFixed(2)} mins` },
+        { label: 'Total Gas Consumption', value: `${totalFuel.toFixed(2)} L` },
+        { label: 'Total Trips Recorded', value: totalTrips },
+      ]);
+
+      // Monthly Stats
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const monthlyTrips = tripData.filter((trip) => {
+        const tripDate = new Date(trip.createdAt);
+        return tripDate.getMonth() === currentMonth && tripDate.getFullYear() === currentYear;
+      });
+
+      const monthlyDistance = monthlyTrips.reduce((sum, trip) => sum + parseFloat(trip.distance || 0), 0);
+      const monthlyTime = monthlyTrips.reduce((sum, trip) => sum + parseFloat(trip.timeArrived || 0), 0);
+      const monthlyFuel = monthlyTrips.reduce((sum, trip) => sum + parseFloat(trip.fuelUsed || 0), 0);
+      const monthlyTripsCount = monthlyTrips.length;
+
+      // Placeholder values for demonstration
+      const mostActiveUser = 'Marcus Aurelius';
+      const averageSpeed = '35 km/h';
+      const mostVisitedLocation = 'SM Valenzuela';
+      const mostMotorUsed = 'Honda Click i125';
+
+      setMonthlyStats([
+        { label: 'Total Gas Expense', value: `₱ ${(monthlyFuel * 100).toFixed(2)}` }, // Assuming ₱100 per liter
+        { label: 'Total Trips Finished', value: monthlyTripsCount },
+        { label: 'Distance Traveled', value: `${monthlyDistance.toFixed(2)} km` },
+        { label: 'Time Traveled', value: `${monthlyTime.toFixed(2)} mins` },
+        { label: 'Most Active User', value: mostActiveUser },
+        { label: 'Average Speed', value: averageSpeed },
+        { label: 'Most Visited Location', value: mostVisitedLocation },
+        { label: 'Most Motor Used', value: mostMotorUsed },
+      ]);
+    };
 
   return (
     <Box p="1.5rem 2.5rem" backgroundColor={theme.palette.primary[400]} minHeight="100vh">
@@ -46,13 +89,13 @@ const TripAnalytics = () => {
               <Paper
                 elevation={4}
                 sx={{
-                  padding: "1.5rem",
-                  textAlign: "center",
+                  padding: '1.5rem',
+                  textAlign: 'center',
                   backgroundColor: theme.palette.background.default,
-                  borderRadius: "0.75rem",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                  "&:hover": {
-                    transform: "scale(1.03)",
+                  borderRadius: '0.75rem',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: 'scale(1.03)',
                     boxShadow: `0 4px 20px ${theme.palette.secondary[300]}`,
                   },
                 }}
@@ -85,13 +128,13 @@ const TripAnalytics = () => {
               <Paper
                 elevation={4}
                 sx={{
-                  padding: "1.5rem",
-                  textAlign: "center",
+                  padding: '1.5rem',
+                  textAlign: 'center',
                   backgroundColor: theme.palette.background.default,
-                  borderRadius: "0.75rem",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                  "&:hover": {
-                    transform: "scale(1.03)",
+                  borderRadius: '0.75rem',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: 'scale(1.03)',
                     boxShadow: `0 4px 20px ${theme.palette.secondary[300]}`,
                   },
                 }}
@@ -110,5 +153,4 @@ const TripAnalytics = () => {
     </Box>
   );
 };
-
 export default TripAnalytics;
