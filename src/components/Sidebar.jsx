@@ -33,8 +33,8 @@ const navItems = [
   { section: "Admin" },
   { text: "User Management", text2: "UserManagement", icon: <People /> },
   { text: "Add Motor", text2: "addMotor", icon: <People /> },
-  { section: "System" },
-  { text: "Settings", text2: "Settings", icon: <SettingsOutlined /> },
+  // { section: "System" },
+  // { text: "Settings", text2: "Settings", icon: <SettingsOutlined /> },
 ];
 
 const Sidebar = ({

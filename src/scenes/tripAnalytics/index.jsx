@@ -22,10 +22,11 @@ const TripAnalytics = () => {
       const data = res.data;
 
       setStats([
+                { label: 'Total Trips Recorded', value: data.totalTrips },
         { label: 'Total Distance Travelled', value: `${data.totalDistance.toFixed(2)} km` },
         { label: 'Total Time Traveled', value: `${data.totalTime.toFixed(2)} mins` },
         { label: 'Total Gas Consumption', value: `${data.totalFuel.toFixed(2)} L` },
-        { label: 'Total Trips Recorded', value: data.totalTrips },
+
         { label: 'Total Gas Expense', value: `₱ ${data.totalExpense.toFixed(2)}` },
       ]);
     } catch (error) {

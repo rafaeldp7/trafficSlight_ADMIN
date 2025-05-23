@@ -48,13 +48,25 @@ const UserManagement = () => {
   }, []);
 
 
-  const columns = [
-    { field: "id", headerName: "ID", flex: 0.5 },
-    { field: "name", headerName: "Name", flex: 0.5 },
-    { field: "email", headerName: "Email", flex: 1 },
-    { field: "barangay", headerName: "Barangay", flex: 0.4 },
-    { field: "street", headerName: "Street", flex: 0.4 },
-  ];
+const columns = [
+  { field: "id", headerName: "ID", flex: 0.5 },
+  { field: "name", headerName: "Name", flex: 0.5 },
+  {
+    field: "email",
+    headerName: "Email",
+    flex: 1,
+    renderCell: (params) => {
+      const email = params.value;
+      const [username, domain] = email.split("@");
+      const maskedUsername = username.slice(0, 2) + "*".repeat(Math.max(0, username.length - 2));
+      const maskedEmail = `${maskedUsername}@${domain}`;
+      return maskedEmail;
+    },
+  },
+  { field: "barangay", headerName: "Barangay", flex: 0.4 },
+  { field: "street", headerName: "Street", flex: 0.4 },
+];
+
 
   return (
     <Box m="1.5rem 2.5rem">

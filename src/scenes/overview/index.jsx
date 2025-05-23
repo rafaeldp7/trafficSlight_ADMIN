@@ -57,7 +57,7 @@ const Overview = () => {
     fetchCount("/api/auth/new-users-this-month", setNewUsersThisMonth, "count");
     fetchCount("/api/auth/first-user-name", setTopUser, "name");
     fetchCount("/api/trips/count", setTotalTrips, "totalTrips");
-    fetchCount("/api/user-motors/count", setTotalMotors, "totalUserMotors");
+    fetchCount("/api/user-motors/count/all", setTotalMotors, "totalUserMotors");
     fetchCount("/api/reports/count", setTotalReports, "totalReports");
     fetchCount("/api/motorcycles/count", setTotalMotorcycles, "totalMotorcycles");
     fetchCount("/api/fuel-logs/count", setTotalFuelLogs, "totalFuelLogs");
