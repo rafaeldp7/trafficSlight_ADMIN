@@ -29,6 +29,7 @@ const navItems = [
   { section: "Navigation" },
   { text: "Overview", text2: "overview", icon: <Dashboard /> },
   { text: "Maps And Traffic", text2: "MapsAndTraffic", icon: <Map /> },
+  { text: "Trips", text2: "TripAnalytics", icon: <Map /> },
   { section: "Admin" },
   { text: "User Management", text2: "UserManagement", icon: <People /> },
   { text: "Add Motor", text2: "addMotor", icon: <People /> },

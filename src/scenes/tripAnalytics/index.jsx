@@ -1,71 +1,78 @@
-import axios from 'axios';
-
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { Box, Typography, Grid, Paper, useTheme } from '@mui/material';
+import Header from 'components/Header';
+import FlexBetween from 'components/FlexBetween';
 
 const TripAnalytics = () => {
-  const [trips, setTrips] = useState([]);
   const [stats, setStats] = useState([]);
   const [monthlyStats, setMonthlyStats] = useState([]);
+  const theme = useTheme();
 
   useEffect(() => {
-    const fetchTrips = async () => {
-      try {
-        const response = await axios.get('https://ts-backend-1-jyit.onrender.com/api/trips');
-        const tripData = response.data;
-        setTrips(tripData);
-        computeStats(tripData);
-      } catch (error) {
-        console.error('Error fetching trip data:', error);
-      }
-    };
-
-    fetchTrips();
+    fetchOverallStats();
+    fetchMonthlyStats();
+    fetchTopUsers();
+    fetchTopMotors();
   }, []);
 
-      const computeStats = (tripData) => {
-      // Overall Stats
-      const totalDistance = tripData.reduce((sum, trip) => sum + parseFloat(trip.distance || 0), 0);
-      const totalTime = tripData.reduce((sum, trip) => sum + parseFloat(trip.timeArrived || 0), 0);
-      const totalFuel = tripData.reduce((sum, trip) => sum + parseFloat(trip.fuelUsed || 0), 0);
-      const totalTrips = tripData.length;
+  const fetchOverallStats = async () => {
+    try {
+      const res = await axios.get('https://ts-backend-1-jyit.onrender.com/api/trips/analytics');
+      const data = res.data;
 
       setStats([
-        { label: 'Total Distance Travelled', value: `${totalDistance.toFixed(2)} km` },
-        { label: 'Total Time Traveled', value: `${totalTime.toFixed(2)} mins` },
-        { label: 'Total Gas Consumption', value: `${totalFuel.toFixed(2)} L` },
-        { label: 'Total Trips Recorded', value: totalTrips },
+        { label: 'Total Distance Travelled', value: `${data.totalDistance.toFixed(2)} km` },
+        { label: 'Total Time Traveled', value: `${data.totalTime.toFixed(2)} mins` },
+        { label: 'Total Gas Consumption', value: `${data.totalFuel.toFixed(2)} L` },
+        { label: 'Total Trips Recorded', value: data.totalTrips },
+        { label: 'Total Gas Expense', value: `₱ ${data.totalExpense.toFixed(2)}` },
       ]);
+    } catch (error) {
+      console.error('Error fetching overall stats:', error);
+    }
+  };
 
-      // Monthly Stats
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      const monthlyTrips = tripData.filter((trip) => {
-        const tripDate = new Date(trip.createdAt);
-        return tripDate.getMonth() === currentMonth && tripDate.getFullYear() === currentYear;
-      });
-
-      const monthlyDistance = monthlyTrips.reduce((sum, trip) => sum + parseFloat(trip.distance || 0), 0);
-      const monthlyTime = monthlyTrips.reduce((sum, trip) => sum + parseFloat(trip.timeArrived || 0), 0);
-      const monthlyFuel = monthlyTrips.reduce((sum, trip) => sum + parseFloat(trip.fuelUsed || 0), 0);
-      const monthlyTripsCount = monthlyTrips.length;
-
-      // Placeholder values for demonstration
-      const mostActiveUser = 'Marcus Aurelius';
-      const averageSpeed = '35 km/h';
-      const mostVisitedLocation = 'SM Valenzuela';
-      const mostMotorUsed = 'Honda Click i125';
+  const fetchMonthlyStats = async () => {
+    try {
+      const res = await axios.get('https://ts-backend-1-jyit.onrender.com/api/trips/summary/month');
+      const data = res.data;
 
       setMonthlyStats([
-        { label: 'Total Gas Expense', value: `₱ ${(monthlyFuel * 100).toFixed(2)}` }, // Assuming ₱100 per liter
-        { label: 'Total Trips Finished', value: monthlyTripsCount },
-        { label: 'Distance Traveled', value: `${monthlyDistance.toFixed(2)} km` },
-        { label: 'Time Traveled', value: `${monthlyTime.toFixed(2)} mins` },
-        { label: 'Most Active User', value: mostActiveUser },
-        { label: 'Average Speed', value: averageSpeed },
-        { label: 'Most Visited Location', value: mostVisitedLocation },
-        { label: 'Most Motor Used', value: mostMotorUsed },
+        { label: 'Total Trips Finished', value: data.tripsThisMonth },
+        { label: 'Distance Traveled', value: `${data.monthlyDistance.toFixed(2)} km` },
+        { label: 'Time Traveled', value: `${data.monthlyTime.toFixed(2)} mins` },
+        { label: 'Total Gas Consumption', value: `${data.monthlyFuel.toFixed(2)} L` },
+        { label: 'Monthly Gas Expense', value: `₱ ${data.monthlyExpense.toFixed(2)}` },
       ]);
-    };
+    } catch (error) {
+      console.error('Error fetching monthly stats:', error);
+    }
+  };
+
+  const fetchTopUsers = async () => {
+    try {
+      const res = await axios.get('https://ts-backend-1-jyit.onrender.com/api/trips/leaderboard');
+      const top = res.data[0];
+      if (top) {
+        setMonthlyStats((prev) => [...prev, { label: 'Most Active User', value: top._id || 'Unknown' }]);
+      }
+    } catch (error) {
+      console.error('Error fetching top users:', error);
+    }
+  };
+
+  const fetchTopMotors = async () => {
+    try {
+      const res = await axios.get('https://ts-backend-1-jyit.onrender.com/api/trips/motors/most-used');
+      const topMotor = res.data[0];
+      if (topMotor) {
+        setMonthlyStats((prev) => [...prev, { label: 'Most Used Motor ID', value: topMotor._id || 'Unknown' }]);
+      }
+    } catch (error) {
+      console.error('Error fetching top motors:', error);
+    }
+  };
 
   return (
     <Box p="1.5rem 2.5rem" backgroundColor={theme.palette.primary[400]} minHeight="100vh">
@@ -74,12 +81,7 @@ const TripAnalytics = () => {
       </FlexBetween>
 
       {/* Overall Stats */}
-      <Box
-        mt="2rem"
-        p="2rem"
-        backgroundColor={theme.palette.background.alt}
-        borderRadius="0.75rem"
-      >
+      <Box mt="2rem" p="2rem" backgroundColor={theme.palette.background.alt} borderRadius="0.75rem">
         <Typography variant="h6" mb={3} color="textPrimary">
           OVERALL STATS
         </Typography>
@@ -113,12 +115,7 @@ const TripAnalytics = () => {
       </Box>
 
       {/* Monthly Breakdown */}
-      <Box
-        mt="3rem"
-        p="2rem"
-        backgroundColor={theme.palette.background.alt}
-        borderRadius="0.75rem"
-      >
+      <Box mt="3rem" p="2rem" backgroundColor={theme.palette.background.alt} borderRadius="0.75rem">
         <Typography variant="h6" mb={3} color="textPrimary">
           THIS MONTH
         </Typography>
@@ -153,4 +150,5 @@ const TripAnalytics = () => {
     </Box>
   );
 };
+
 export default TripAnalytics;
