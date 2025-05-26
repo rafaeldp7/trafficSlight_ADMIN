@@ -86,14 +86,15 @@ if (!model || !fuelConsumption) {
       const response = await fetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model,
-          engineDisplacement: parseFloat(engineDisplacement),
-          power,
-          torque,
-          fuelTank: parseFloat(fuelTank),
-          fuelConsumption: parseFloat(fuelConsumption),
-        }),
+body: JSON.stringify({
+  model,
+  engineDisplacement: engineDisplacement ? parseFloat(engineDisplacement) : undefined,
+  power,
+  torque,
+  fuelTank: fuelTank ? parseFloat(fuelTank) : undefined,
+  fuelConsumption: parseFloat(fuelConsumption),
+}),
+
       });
 
       const data = await response.json();
