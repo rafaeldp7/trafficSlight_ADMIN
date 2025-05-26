@@ -70,10 +70,11 @@ const AddMotor = () => {
       fuelConsumption,
     } = formData;
 
-    if (!model || !engineDisplacement || !power || !torque || !fuelTank || !fuelConsumption) {
-      setMessage("❌ Please fill out all fields.");
-      return;
-    }
+if (!model || !fuelConsumption) {
+  setMessage("❌ Please fill in required fields: Model and Fuel Consumption.");
+  return;
+}
+
 
     setLoading(true);
     setMessage("");
@@ -184,12 +185,12 @@ const AddMotor = () => {
         </Typography>
         <Paper elevation={3} sx={{ p: 3, borderRadius: "0.55rem", maxWidth: 600, mx: "auto" }}>
           <form onSubmit={handleSubmit}>
-            <TextField fullWidth label="Model" name="model" value={formData.model} onChange={handleChange} margin="normal" />
+            <TextField required fullWidth label="Model" name="model" value={formData.model} onChange={handleChange} margin="normal" />
             <TextField fullWidth label="Engine Displacement" name="engineDisplacement" value={formData.engineDisplacement} onChange={handleChange} margin="normal" type="number" />
             <TextField fullWidth label="Power" name="power" value={formData.power} onChange={handleChange} margin="normal" />
             <TextField fullWidth label="Torque" name="torque" value={formData.torque} onChange={handleChange} margin="normal" />
             <TextField fullWidth label="Fuel Tank" name="fuelTank" value={formData.fuelTank} onChange={handleChange} margin="normal" type="number" />
-            <TextField fullWidth label="Fuel Consumption" name="fuelConsumption" value={formData.fuelConsumption} onChange={handleChange} margin="normal" type="number" />
+            <TextField required fullWidth label="Fuel Consumption" name="fuelConsumption" value={formData.fuelConsumption} onChange={handleChange} margin="normal" type="number" />
             <Box mt={2} display="flex" gap={2}>
               <Button type="submit" fullWidth variant="contained" color="primary" disabled={loading}>
                 {loading ? "Saving..." : editingId ? "Update Motorcycle" : "Add Motorcycle"}
