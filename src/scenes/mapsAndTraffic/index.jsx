@@ -23,13 +23,34 @@ const MapsAndTraffic = () => {
   const [map, setMap] = useState(null);
   const [reports, setReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
+  const [stations, setStations] = useState([]);
 
   const REACT_LOCALHOST_IP = "https://ts-backend-1-jyit.onrender.com";
 
   useEffect(() => {
+    const fetchStations = async () => {
+      if (!userLocation) return;
+
+      try {
+        const res = await fetch(
+          `${REACT_LOCALHOST_IP}/api/gas-stations/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}`
+        );
+        const data = await res.json();
+        setStations(data);
+      } catch (error) {
+        console.error("Error fetching gas stations:", error);
+      }
+    };
+
+    fetchStations();
+  }, [userLocation]);
+
+  useEffect(() => {
     const fetchUserLocation = async () => {
       try {
-        const res = await fetch(`${REACT_LOCALHOST_IP}/api/maps/active-user-location`);
+        const res = await fetch(
+          `${REACT_LOCALHOST_IP}/api/maps/active-user-location`
+        );
         const data = await res.json();
         setUserLocation({ lat: data.latitude, lng: data.longitude });
       } catch (error) {
@@ -80,7 +101,9 @@ const MapsAndTraffic = () => {
         display="flex"
         flexDirection="column"
       >
-        <Typography variant="h6" mb={1}>Live Traffic Map</Typography>
+        <Typography variant="h6" mb={1}>
+          Live Traffic Map
+        </Typography>
 
         <Paper
           elevation={3}
@@ -93,49 +116,86 @@ const MapsAndTraffic = () => {
               zoom={14}
               onLoad={(map) => setMap(map)}
             >
-              {reports.map((report) => (
-                report.location?.latitude && report.location?.longitude && (
+              {reports.map(
+                (report) =>
+                  report.location?.latitude &&
+                  report.location?.longitude && (
+                    <Marker
+                      key={report._id}
+                      position={{
+                        lat: report.location.latitude,
+                        lng: report.location.longitude,
+                      }}
+                      onClick={() => setSelectedReport(report)}
+                    />
+                  )
+              )}
+
+              {stations.map((station) => (
+                station.location?.coordinates && (
                   <Marker
-                    key={report._id}
+                    key={station._id}
                     position={{
-                      lat: report.location.latitude,
-                      lng: report.location.longitude,
+                      lat: station.location.coordinates[1], // latitude
+                      lng: station.location.coordinates[0], // longitude
                     }}
-                    onClick={() => setSelectedReport(report)}
+                    icon={{
+                      url: "https://maps.google.com/mapfiles/ms/icons/gas.png",
+                      scaledSize: new window.google.maps.Size(32, 32),
+                    }}
+                    onClick={() => setSelectedReport({
+                      ...station,
+                      isGasStation: true
+                    })}
                   />
                 )
               ))}
 
+
               {selectedReport && (
-                <InfoWindow
-  position={{
-    lat: selectedReport.location.latitude,
-    lng: selectedReport.location.longitude,
-  }}
-  onCloseClick={() => setSelectedReport(null)}
->
-  <Box>
-    <Typography fontWeight="bold" variant="subtitle1" color="black" gutterBottom>
-      {selectedReport.reportType}
-    </Typography>
+  <InfoWindow
+    position={{
+      lat: selectedReport.location?.latitude || selectedReport.location?.coordinates[1],
+      lng: selectedReport.location?.longitude || selectedReport.location?.coordinates[0],
+    }}
+    onCloseClick={() => setSelectedReport(null)}
+  >
+    <Box>
+      {selectedReport.isGasStation ? (
+        <>
+          <Typography fontWeight="bold" variant="subtitle1" color="black" gutterBottom>
+            {selectedReport.name} ({selectedReport.brand})
+          </Typography>
+          <Typography variant="body2" color="black" gutterBottom>
+            Gasoline: ₱{selectedReport.fuelPrices?.gasoline || "N/A"}<br />
+            Diesel: ₱{selectedReport.fuelPrices?.diesel || "N/A"}
+          </Typography>
+          <Typography variant="caption" color="black">
+            {selectedReport.address?.street}, {selectedReport.address?.city}
+          </Typography>
+        </>
+      ) : (
+        <>
+          <Typography fontWeight="bold" variant="subtitle1" color="black" gutterBottom>
+            {selectedReport.reportType}
+          </Typography>
+          <Typography variant="body2" gutterBottom color="black">
+            {selectedReport.description || "No description provided."}
+          </Typography>
+          <Typography variant="caption" color="black" display="block" gutterBottom>
+            {selectedReport.timestamp
+              ? `Reported: ${new Date(selectedReport.timestamp).toLocaleString()}`
+              : "Timestamp unknown"}
+          </Typography>
+          <Typography variant="caption" color="black">
+            Submitted by: {selectedReport._id || "Unknown user"}
+          </Typography>
+        </>
+      )}
+    </Box>
+  </InfoWindow>
+)}
 
-    <Typography variant="body2" gutterBottom color="black">
-      {selectedReport.description || "No description provided."}
-    </Typography>
-
-    <Typography variant="caption" color="black" display="block" gutterBottom>
-      {selectedReport.timestamp
-        ? `Reported: ${new Date(selectedReport.timestamp).toLocaleString()}`
-        : "Timestamp unknown"}
-    </Typography>
-
-    <Typography variant="caption" color="black">
-      Submitted by: {selectedReport._id || "Unknown user"}
-    </Typography>
-  </Box>
-</InfoWindow>
-
-              )}
 
               <TrafficLayer />
             </GoogleMap>
