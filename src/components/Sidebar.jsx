@@ -86,7 +86,7 @@ const Sidebar = ({
                     borderRadius="5px"
                     sx={{
                       objectFit: "cover",
-                      backgroundColor: theme.palette.primary[600],
+                      //backgroundColor: theme.palette.primary[600],
                     }}
                   />
                 </Box>
