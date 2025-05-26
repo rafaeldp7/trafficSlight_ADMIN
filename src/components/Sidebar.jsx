@@ -23,7 +23,7 @@ import {
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import FlexBetween from "./FlexBetween";
-import Image from "assets/traffic-slight.png";
+import Image from "assets/trafficSlight_logo.png";
 
 const navItems = [
   { section: "Navigation" },
