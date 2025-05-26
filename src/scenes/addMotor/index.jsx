@@ -70,10 +70,11 @@ const AddMotor = () => {
       fuelConsumption,
     } = formData;
 
-if (!model || !fuelConsumption) {
-  setMessage("❌ Please fill in required fields: Model and Fuel Consumption.");
+if (!model || !fuelConsumption || parseFloat(fuelConsumption) <= 0) {
+  setMessage("❌ Model qwer and a valid positive Fuel Consumption are required.");
   return;
 }
+
 
 
     setLoading(true);
