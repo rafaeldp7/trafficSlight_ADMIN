@@ -92,7 +92,7 @@ const Overview = () => {
         <StatBox title="New Users This Month" value={newUsersThisMonth} />
         <StatBox title="Reports Submitted" value={totalReports} />
         <StatBox title="Motorcycle Models" value={totalMotorcycles} />
-        <StatBox title="Top Rider" value={topUser ?? "N/A"} />
+        <StatBox title="First Rider" value={topUser ?? "N/A"} />
       </Box>
 
       <Box mt="40px" height="100%" width="100%" alignItems="center" justifyContent="center">
