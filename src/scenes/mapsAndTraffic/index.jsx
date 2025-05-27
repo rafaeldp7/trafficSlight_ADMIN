@@ -24,26 +24,25 @@ const MapsAndTraffic = () => {
   const [reports, setReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
   const [stations, setStations] = useState([]);
+  
+
 
   const REACT_LOCALHOST_IP = "https://ts-backend-1-jyit.onrender.com";
 
-  useEffect(() => {
-    const fetchStations = async () => {
-      if (!userLocation) return;
+useEffect(() => {
+  const fetchStations = async () => {
+    try {
+      const res = await fetch(`${REACT_LOCALHOST_IP}/api/gas-stations`);
+      const data = await res.json();
+      setStations(data);
+    } catch (error) {
+      console.error("Error fetching gas stations:", error);
+    }
+  };
 
-      try {
-        const res = await fetch(
-          `${REACT_LOCALHOST_IP}/api/gas-stations/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}`
-        );
-        const data = await res.json();
-        setStations(data);
-      } catch (error) {
-        console.error("Error fetching gas stations:", error);
-      }
-    };
+  fetchStations();
+}, []);
 
-    fetchStations();
-  }, [userLocation]);
 
   useEffect(() => {
     const fetchUserLocation = async () => {
@@ -162,19 +161,29 @@ const MapsAndTraffic = () => {
   >
     <Box>
       {selectedReport.isGasStation ? (
-        <>
-          <Typography fontWeight="bold" variant="subtitle1" color="black" gutterBottom>
-            {selectedReport.name} ({selectedReport.brand})
-          </Typography>
-          <Typography variant="body2" color="black" gutterBottom>
-            Gasoline: ₱{selectedReport.fuelPrices?.gasoline || "N/A"}<br />
-            Diesel: ₱{selectedReport.fuelPrices?.diesel || "N/A"}
-          </Typography>
-          <Typography variant="caption" color="black">
-            {selectedReport.address?.street}, {selectedReport.address?.city}
-          </Typography>
-        </>
-      ) : (
+  <>
+    <Typography fontWeight="bold" variant="subtitle1" color="black" gutterBottom>
+      {selectedReport.name} ({selectedReport.brand})
+    </Typography>
+    <Typography variant="body2" color="black" gutterBottom>
+      Gasoline: ₱{selectedReport.fuelPrices?.gasoline ?? "N/A"}<br />
+      Diesel: ₱{selectedReport.fuelPrices?.diesel ?? "N/A"}<br />
+      Premium: ₱{selectedReport.fuelPrices?.premium ?? "N/A"}
+    </Typography>
+    <Typography variant="caption" color="black" gutterBottom display="block">
+      {selectedReport.address?.street}, {selectedReport.address?.barangay}, {selectedReport.address?.city}
+    </Typography>
+    <button
+      style={{ marginTop: "0.5rem", background: "#1976d2", color: "white", border: "none", padding: "5px 10px", cursor: "pointer", borderRadius: "4px" }}
+      onClick={() => {
+        // redirect to your edit page (e.g., admin/stations/edit/:id)
+        window.location.href = `/admin/stations/edit/${selectedReport._id}`;
+      }}
+    >
+      Edit Station
+    </button>
+  </>
+) : (
         <>
           <Typography fontWeight="bold" variant="subtitle1" color="black" gutterBottom>
             {selectedReport.reportType}

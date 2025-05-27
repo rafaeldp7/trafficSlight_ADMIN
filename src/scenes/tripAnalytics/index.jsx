@@ -1,61 +1,54 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
-  Box, Typography, Grid, Paper, useTheme,
-  Table, TableHead, TableRow, TableCell, TableBody, TablePagination,
-  TextField, MenuItem, Button
+  Box,
+  Typography,
+  Grid,
+  Paper,
+  useTheme,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  TablePagination,
 } from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import dayjs from "dayjs";
 import { Bar, Line } from "react-chartjs-2";
 import { Chart, registerables } from "chart.js";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
 import Header from "components/Header";
 import FlexBetween from "components/FlexBetween";
 
 Chart.register(...registerables);
-
-// ✅ Helper to safely format numbers
-const formatNumber = (value, unit = "") =>
-  typeof value === "number" ? `${value.toFixed(2)}${unit}` : `0.00${unit}`;
 
 const TripAnalytics = () => {
   const theme = useTheme();
   const [stats, setStats] = useState([]);
   const [monthlyStats, setMonthlyStats] = useState([]);
   const [tripTable, setTripTable] = useState([]);
-  const [chartData, setChartData] = useState(null);
-  const [efficiencyData, setEfficiencyData] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [userFilter, setUserFilter] = useState("All");
-  const [startDate, setStartDate] = useState(dayjs().startOf("month"));
-  const [endDate, setEndDate] = useState(dayjs());
+  const [totalTrips, setTotalTrips] = useState(0);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [totalTrips, setTotalTrips] = useState(0);
+  const [chartData, setChartData] = useState(null);
+
+  const safeFixed = (value) => (typeof value === "number" ? value.toFixed(2) : "0.00");
 
   useEffect(() => {
     fetchOverallStats();
     fetchMonthlyStats();
-    fetchUsers();
-    fetchFilteredTrips();
+    fetchPaginatedTrips(0, 5);
   }, []);
-
-  useEffect(() => {
-    fetchFilteredTrips();
-  }, [startDate, endDate, userFilter, page, rowsPerPage]);
 
   const fetchOverallStats = async () => {
     try {
       const res = await axios.get("https://ts-backend-1-jyit.onrender.com/api/trips/analytics");
       const data = res.data;
+
       setStats([
-        { label: "Total Trips", value: data.totalTrips },
-        { label: "Distance Traveled", value: formatNumber(data.totalDistance, " km") },
-        { label: "Total Time", value: formatNumber(data.totalTime, " mins") },
-        { label: "Total Fuel", value: formatNumber(data.totalFuel, " L") },
-        { label: "Total Expense", value: formatNumber(data.totalExpense, "₱ ") },
+        { label: "Total Trips Recorded", value: data.totalTrips },
+        { label: "Total Distance Travelled", value: `${safeFixed(data.totalDistance)} km` },
+        { label: "Total Time Traveled", value: `${safeFixed(data.totalTime)} mins` },
+        { label: "Total Gas Consumption", value: `${safeFixed(data.totalFuel)} L` },
+        { label: "Total Gas Expense", value: `₱ ${safeFixed(data.totalExpense)}` },
       ]);
     } catch (error) {
       console.error("Error fetching overall stats:", error);
@@ -66,105 +59,87 @@ const TripAnalytics = () => {
     try {
       const res = await axios.get("https://ts-backend-1-jyit.onrender.com/api/trips/summary/month");
       const data = res.data;
+
       setMonthlyStats([
         { label: "Trips This Month", value: data.tripsThisMonth },
-        { label: "Monthly Distance", value: formatNumber(data.monthlyDistance, " km") },
-        { label: "Monthly Fuel", value: formatNumber(data.monthlyFuel, " L") },
-        { label: "Monthly Expense", value: formatNumber(data.monthlyExpense, "₱ ") },
+        { label: "Monthly Distance", value: safeFixed(data.monthlyDistance) },
+        { label: "Monthly Fuel", value: safeFixed(data.monthlyFuel) },
+        { label: "Monthly Expense", value: safeFixed(data.monthlyExpense) },
       ]);
 
       setChartData({
         labels: ["Trips", "Distance (km)", "Fuel (L)", "Expense (₱)"],
-        datasets: [{
-          label: "Monthly Metrics",
-          data: [
-            data.tripsThisMonth,
-            data.monthlyDistance,
-            data.monthlyFuel,
-            data.monthlyExpense,
-          ],
-          backgroundColor: ["#2196f3", "#4caf50", "#ff9800", "#f44336"],
-        }],
+        datasets: [
+          {
+            label: "Monthly Metrics",
+            data: [
+              data.tripsThisMonth,
+              data.monthlyDistance,
+              data.monthlyFuel,
+              data.monthlyExpense,
+            ],
+            backgroundColor: ["#2196f3", "#4caf50", "#ff9800", "#f44336"],
+          },
+        ],
       });
     } catch (error) {
       console.error("Error fetching monthly stats:", error);
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchPaginatedTrips = async (page, limit) => {
     try {
-      const res = await axios.get("https://ts-backend-1-jyit.onrender.com/api/auth/users");
-      setUsers(res.data);
-    } catch (err) {
-      console.error("Error fetching users:", err);
-    }
-  };
-
-  const fetchFilteredTrips = async () => {
-    try {
-      const params = {
-        page: page + 1,
-        limit: rowsPerPage,
-        startDate: startDate.format("YYYY-MM-DD"),
-        endDate: endDate.format("YYYY-MM-DD"),
-      };
-      if (userFilter !== "All") {
-        params.userId = userFilter;
-      }
-
-      const res = await axios.get("https://ts-backend-1-jyit.onrender.com/api/trips/paginated", { params });
+      const res = await axios.get(
+        `https://ts-backend-1-jyit.onrender.com/api/trips/paginated?page=${page + 1}&limit=${limit}`
+      );
       setTripTable(res.data.trips || []);
-      setTotalTrips(res.data.totalCount || 0);
-
-      // Fuel Efficiency = distance / fuelUsed
-      const efficiency = res.data.trips.map((trip) => ({
-        id: trip._id,
-        label: `${trip.user?.name || "User"} - ${trip.motor?.model || "Motor"}`,
-        value:
-          typeof trip.distance === "number" && trip.fuelUsed > 0
-            ? (trip.distance / trip.fuelUsed).toFixed(2)
-            : 0,
-      }));
-
-      setEfficiencyData({
-        labels: efficiency.map((e) => e.label),
-        datasets: [{
-          label: "Fuel Efficiency (km/L)",
-          data: efficiency.map((e) => e.value),
-          backgroundColor: "#00acc1",
-        }],
-      });
+      setTotalTrips(res.data.totalRecords || 0);
     } catch (error) {
-      console.error("Error fetching filtered trips:", error);
+      console.error("Error fetching paginated trips:", error);
     }
   };
 
-  const handleExport = () => {
-    const sheet = XLSX.utils.json_to_sheet(tripTable);
-    const book = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(book, sheet, "Trips");
-    const buffer = XLSX.write(book, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    saveAs(blob, "Trip_Data.xlsx");
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+    fetchPaginatedTrips(newPage, rowsPerPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    const newLimit = parseInt(event.target.value, 10);
+    setRowsPerPage(newLimit);
+    setPage(0);
+    fetchPaginatedTrips(0, newLimit);
   };
 
   return (
     <Box p="1.5rem 2.5rem" backgroundColor={theme.palette.primary[400]} minHeight="100vh">
       <FlexBetween>
         <Header title="Trip Analytics" />
-        <Button variant="contained" onClick={handleExport}>Export Excel</Button>
       </FlexBetween>
 
-      {/* Dashboard */}
+      {/* Dashboard: Overall Stats */}
       <Box mt="2rem">
-        <Grid container spacing={2}>
+        <Typography variant="h6" mb={2}>OVERALL STATS</Typography>
+        <Grid container spacing={3}>
           {stats.map((stat, idx) => (
             <Grid item xs={12} sm={6} md={3} key={idx}>
-              <Paper sx={{ p: 2, textAlign: "center", borderRadius: "0.75rem" }}>
-                <Typography variant="subtitle2">{stat.label}</Typography>
-                <Typography variant="h5" color={theme.palette.secondary[500]}>
+              <Paper
+                elevation={3}
+                sx={{
+                  p: 2,
+                  textAlign: "center",
+                  borderRadius: "0.75rem",
+                  transition: "all 0.2s ease-in-out",
+                  "&:hover": {
+                    transform: "scale(1.03)",
+                    boxShadow: `0 4px 20px ${theme.palette.secondary[300]}`,
+                  },
+                }}
+              >
+                <Typography variant="subtitle2" color="textSecondary">
+                  {stat.label}
+                </Typography>
+                <Typography variant="h5" fontWeight="bold" color={theme.palette.secondary[500]}>
                   {stat.value}
                 </Typography>
               </Paper>
@@ -173,52 +148,52 @@ const TripAnalytics = () => {
         </Grid>
       </Box>
 
-      {/* Filters */}
-      <Box mt={4} display="flex" gap={2} flexWrap="wrap" alignItems="center">
-        <DatePicker label="Start Date" value={startDate} onChange={(newValue) => setStartDate(newValue)} />
-        <DatePicker label="End Date" value={endDate} onChange={(newValue) => setEndDate(newValue)} />
-        <TextField
-          select
-          label="Filter by User"
-          value={userFilter}
-          onChange={(e) => setUserFilter(e.target.value)}
-          sx={{ minWidth: 200 }}
-        >
-          <MenuItem value="All">All Users</MenuItem>
-          {users.map((u) => (
-            <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>
-          ))}
-        </TextField>
-      </Box>
-
-      {/* Charts */}
-      <Box mt={4}>
-        <Grid container spacing={4}>
-          {chartData && (
-            <Grid item xs={12} md={6}>
-              <Bar data={chartData} options={{ plugins: { legend: { display: false } } }} />
-            </Grid>
-          )}
-          {efficiencyData && (
-            <Grid item xs={12} md={6}>
-              <Typography variant="h6" mb={1}>Fuel Efficiency per Trip</Typography>
+      {/* Metrics Chart */}
+      <Box mt="4rem">
+        <Typography variant="h6" mb={2}>Monthly Metrics Overview</Typography>
+        {chartData && (
+          <Box display="flex" gap={4} flexWrap="wrap" justifyContent="center">
+            <Box width={{ xs: "100%", md: "45%" }}>
               <Bar
-                data={efficiencyData}
+                data={chartData}
                 options={{
                   responsive: true,
-                  plugins: { legend: { display: false } },
-                  scales: {
-                    y: { title: { display: true, text: "km/L" } },
+                  plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: "Monthly Breakdown", font: { size: 16 } },
                   },
                 }}
               />
-            </Grid>
-          )}
-        </Grid>
+            </Box>
+            <Box width={{ xs: "100%", md: "45%" }}>
+              <Line
+                data={{
+                  labels: chartData.labels,
+                  datasets: [
+                    {
+                      label: "Growth Trend",
+                      data: chartData.datasets[0].data,
+                      borderColor: "#ff9800",
+                      backgroundColor: "rgba(255,152,0,0.2)",
+                      tension: 0.4,
+                      fill: true,
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: { display: false },
+                  },
+                }}
+              />
+            </Box>
+          </Box>
+        )}
       </Box>
 
-      {/* Table */}
-      <Box mt={5} backgroundColor={theme.palette.background.alt} borderRadius="0.75rem" p="2rem">
+      {/* Paginated Trip Table */}
+      <Box mt="4rem" backgroundColor={theme.palette.background.alt} borderRadius="0.75rem" p="2rem">
         <Typography variant="h6" mb={2}>Trip Records</Typography>
         <Table>
           <TableHead>
@@ -226,7 +201,7 @@ const TripAnalytics = () => {
               <TableCell>User</TableCell>
               <TableCell>Motor</TableCell>
               <TableCell>Distance</TableCell>
-              <TableCell>Fuel Used</TableCell>
+              <TableCell>Fuel</TableCell>
               <TableCell>Expense</TableCell>
               <TableCell>Date</TableCell>
             </TableRow>
@@ -234,12 +209,12 @@ const TripAnalytics = () => {
           <TableBody>
             {tripTable.map((trip, i) => (
               <TableRow key={i}>
-                <TableCell>{trip.user?.name || "Unknown"}</TableCell>
-                <TableCell>{trip.motor?.model || "N/A"}</TableCell>
-                <TableCell>{formatNumber(trip.distance, " km")}</TableCell>
-                <TableCell>{formatNumber(trip.fuelUsed, " L")}</TableCell>
-                <TableCell>{formatNumber(trip.totalCost, "₱ ")}</TableCell>
-                <TableCell>{new Date(trip.date).toLocaleDateString()}</TableCell>
+                <TableCell>{trip.userId?.name || "Unknown"}</TableCell>
+                <TableCell>{trip.motorId?.model || "N/A"}</TableCell>
+                <TableCell>{safeFixed(trip.distance)} km</TableCell>
+                <TableCell>{safeFixed(trip.fuelUsed)} L</TableCell>
+                <TableCell>₱ {safeFixed(trip.totalCost)}</TableCell>
+                <TableCell>{trip.createdAt ? new Date(trip.createdAt).toLocaleDateString() : "-"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -248,12 +223,9 @@ const TripAnalytics = () => {
           component="div"
           count={totalTrips}
           page={page}
-          onPageChange={(e, newPage) => setPage(newPage)}
+          onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
+          onRowsPerPageChange={handleChangeRowsPerPage}
           rowsPerPageOptions={[5, 10, 20]}
         />
       </Box>
