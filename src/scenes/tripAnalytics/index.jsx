@@ -148,7 +148,7 @@ const TripAnalytics = () => {
         </Grid>
       </Box>
 
-      {/* Metrics Chart */}
+      {/* Metrics Chart 
       <Box mt="4rem">
         <Typography variant="h6" mb={2}>Monthly Metrics Overview</Typography>
         {chartData && (
@@ -190,7 +190,7 @@ const TripAnalytics = () => {
             </Box>
           </Box>
         )}
-      </Box>
+      </Box>*/}
 
       {/* Paginated Trip Table */}
       <Box mt="4rem" backgroundColor={theme.palette.background.alt} borderRadius="0.75rem" p="2rem">
