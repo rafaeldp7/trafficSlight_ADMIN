@@ -26,7 +26,6 @@ const MapsAndTraffic = () => {
 
   const REACT_LOCALHOST_IP = "https://ts-backend-1-jyit.onrender.com";
 
-  // Load Google Maps script
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4",
   });
@@ -35,10 +34,12 @@ const MapsAndTraffic = () => {
     const fetchStations = async () => {
       try {
         const res = await fetch(`${REACT_LOCALHOST_IP}/api/gas-stations`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        setStations(data);
+        setStations(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Error fetching gas stations:", error);
+        setStations([]);
       }
     };
 
@@ -49,10 +50,12 @@ const MapsAndTraffic = () => {
     const fetchUserLocation = async () => {
       try {
         const res = await fetch(`${REACT_LOCALHOST_IP}/api/maps/active-user-location`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setUserLocation({ lat: data.latitude, lng: data.longitude });
       } catch (error) {
         console.error("Error fetching user location:", error);
+        setUserLocation(null);
       }
     };
 
@@ -65,8 +68,9 @@ const MapsAndTraffic = () => {
     const fetchReports = async () => {
       try {
         const res = await fetch(`${REACT_LOCALHOST_IP}/api/reports`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        setReports(data);
+        setReports(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to fetch reports:", err);
         setReports([]);
@@ -83,9 +87,8 @@ const MapsAndTraffic = () => {
     }
   }, [map]);
 
-  // Safe icon config
   const gasIcon = useMemo(() => {
-    if (!isLoaded || !window.google) return null;
+    if (!isLoaded || typeof window === "undefined" || !window.google) return null;
     return {
       url: "https://maps.google.com/mapfiles/ms/icons/gas.png",
       scaledSize: new window.google.maps.Size(32, 32),
@@ -122,40 +125,42 @@ const MapsAndTraffic = () => {
             onLoad={(map) => setMap(map)}
           >
             {/* Traffic Reports */}
-            {reports.map((report) =>
-              report.location?.latitude && report.location?.longitude ? (
-                <Marker
-                  key={report._id}
-                  position={{
-                    lat: report.location.latitude,
-                    lng: report.location.longitude,
-                  }}
-                  onClick={() => setSelectedReport(report)}
-                />
-              ) : null
-            )}
+            {Array.isArray(reports) &&
+              reports.map((report) =>
+                report.location?.latitude && report.location?.longitude ? (
+                  <Marker
+                    key={report._id}
+                    position={{
+                      lat: report.location.latitude,
+                      lng: report.location.longitude,
+                    }}
+                    onClick={() => setSelectedReport(report)}
+                  />
+                ) : null
+              )}
 
             {/* Gas Stations */}
-            {stations.map((station) =>
-              station.location?.coordinates ? (
-                <Marker
-                  key={station._id}
-                  position={{
-                    lat: station.location.coordinates[1],
-                    lng: station.location.coordinates[0],
-                  }}
-                  icon={gasIcon}
-                  onClick={() =>
-                    setSelectedReport({
-                      ...station,
-                      isGasStation: true,
-                    })
-                  }
-                />
-              ) : null
-            )}
+            {Array.isArray(stations) &&
+              stations.map((station) =>
+                station.location?.coordinates ? (
+                  <Marker
+                    key={station._id}
+                    position={{
+                      lat: station.location.coordinates[1],
+                      lng: station.location.coordinates[0],
+                    }}
+                    icon={gasIcon}
+                    onClick={() =>
+                      setSelectedReport({
+                        ...station,
+                        isGasStation: true,
+                      })
+                    }
+                  />
+                ) : null
+              )}
 
-            {/* InfoWindow for selected marker */}
+            {/* InfoWindow */}
             {selectedReport && (
               <InfoWindow
                 position={{
