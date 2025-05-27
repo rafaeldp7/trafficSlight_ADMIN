@@ -46,7 +46,7 @@ const MapsAndTraffic = () => {
     fetchStations();
   }, []);
 
-  useEffect(() => {
+  {/*useEffect(() => {
     const fetchUserLocation = async () => {
       try {
         const res = await fetch(`${REACT_LOCALHOST_IP}/api/maps/active-user-location`);
@@ -63,6 +63,7 @@ const MapsAndTraffic = () => {
     const interval = setInterval(fetchUserLocation, 5000);
     return () => clearInterval(interval);
   }, []);
+ 
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -94,8 +95,10 @@ const MapsAndTraffic = () => {
       scaledSize: new window.google.maps.Size(32, 32),
     };
   }, [isLoaded]);
-
+ */}
   if (!isLoaded) return <Typography>Loading Map...</Typography>;
+
+
 
   return (
     <Box p="1.5rem 2.5rem" backgroundColor={theme.palette.primary[400]}>
