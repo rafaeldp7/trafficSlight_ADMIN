@@ -13,6 +13,8 @@ import Reports from "scenes/Reports";
 import SystemLogsAndSecurity from "scenes/systemLogsAndSecurity";
 import TripAnalytics from "scenes/tripAnalytics";
 import AddMotor from "scenes/addMotor";
+import UserMotor from "scenes/userMotor";
+
 
 function App() {
   const mode = useSelector((state) => state.global.mode);
@@ -33,6 +35,9 @@ function App() {
               <Route path="/SystemLogsAndSecurity" element={<SystemLogsAndSecurity />} />
               <Route path="/Settings" element={<Settings />} />
               <Route path="/addMotor" element={<AddMotor />} />
+              <Route path="/userMotor" element={<UserMotor />} />
+
+              
             </Route>
           </Routes>
         </ThemeProvider>

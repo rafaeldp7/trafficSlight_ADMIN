@@ -1,72 +1,76 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import {
   Box,
   Typography,
   Grid,
   Paper,
-  useTheme,
+  TextField,
+  Button,
   Table,
   TableHead,
   TableRow,
   TableCell,
   TableBody,
+  IconButton,
   TablePagination,
+  useTheme,
 } from "@mui/material";
+import { Delete } from "@mui/icons-material";
 import { Bar, Line } from "react-chartjs-2";
 import { Chart, registerables } from "chart.js";
+import axios from "axios";
 import Header from "components/Header";
-import FlexBetween from "components/FlexBetween";
 
 Chart.register(...registerables);
+const API = "https://ts-backend-1-jyit.onrender.com/api/trips";
 
-const TripAnalytics = () => {
+const AdminTripsDashboard = () => {
   const theme = useTheme();
+
   const [stats, setStats] = useState([]);
   const [monthlyStats, setMonthlyStats] = useState([]);
+  const [chartData, setChartData] = useState(null);
   const [tripTable, setTripTable] = useState([]);
   const [totalTrips, setTotalTrips] = useState(0);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [chartData, setChartData] = useState(null);
+  const [userIdFilter, setUserIdFilter] = useState("");
+  const [reload, setReload] = useState(false);
 
-  const safeFixed = (value) => (typeof value === "number" ? value.toFixed(2) : "0.00");
+  const safeFixed = (val) => (typeof val === "number" ? val.toFixed(2) : "0.00");
 
   useEffect(() => {
     fetchOverallStats();
     fetchMonthlyStats();
-    fetchPaginatedTrips(0, 5);
-  }, []);
+    fetchPaginatedTrips(page, rowsPerPage);
+  }, [page, reload]);
 
   const fetchOverallStats = async () => {
     try {
-      const res = await axios.get("https://ts-backend-1-jyit.onrender.com/api/trips/analytics");
+      const res = await axios.get(`${API}/analytics`);
       const data = res.data;
-
       setStats([
-        { label: "Total Trips Recorded", value: data.totalTrips },
-        { label: "Total Distance Travelled", value: `${safeFixed(data.totalDistance)} km` },
-        { label: "Total Time Traveled", value: `${safeFixed(data.totalTime)} mins` },
-        { label: "Total Gas Consumption", value: `${safeFixed(data.totalFuel)} L` },
-        { label: "Total Gas Expense", value: `₱ ${safeFixed(data.totalExpense)}` },
+        { label: "Total Trips", value: data.totalTrips },
+        { label: "Total Distance", value: `${safeFixed(data.totalDistance)} km` },
+        { label: "Total Time", value: `${safeFixed(data.totalTime)} mins` },
+        { label: "Total Fuel", value: `${safeFixed(data.totalFuel)} L` },
+        { label: "Total Expense", value: `₱ ${safeFixed(data.totalExpense)}` },
       ]);
-    } catch (error) {
-      console.error("Error fetching overall stats:", error);
+    } catch (err) {
+      console.error("Error fetching overall stats:", err);
     }
   };
 
   const fetchMonthlyStats = async () => {
     try {
-      const res = await axios.get("https://ts-backend-1-jyit.onrender.com/api/trips/summary/month");
+      const res = await axios.get(`${API}/summary/month`);
       const data = res.data;
-
       setMonthlyStats([
         { label: "Trips This Month", value: data.tripsThisMonth },
         { label: "Monthly Distance", value: safeFixed(data.monthlyDistance) },
         { label: "Monthly Fuel", value: safeFixed(data.monthlyFuel) },
         { label: "Monthly Expense", value: safeFixed(data.monthlyExpense) },
       ]);
-
       setChartData({
         labels: ["Trips", "Distance (km)", "Fuel (L)", "Expense (₱)"],
         datasets: [
@@ -82,20 +86,31 @@ const TripAnalytics = () => {
           },
         ],
       });
-    } catch (error) {
-      console.error("Error fetching monthly stats:", error);
+    } catch (err) {
+      console.error("Error fetching monthly stats:", err);
     }
   };
 
   const fetchPaginatedTrips = async (page, limit) => {
     try {
-      const res = await axios.get(
-        `https://ts-backend-1-jyit.onrender.com/api/trips/paginated?page=${page + 1}&limit=${limit}`
-      );
-      setTripTable(res.data.trips || []);
-      setTotalTrips(res.data.totalRecords || 0);
-    } catch (error) {
-      console.error("Error fetching paginated trips:", error);
+      const url = userIdFilter
+        ? `${API}/user-trips/${userIdFilter}`
+        : `${API}/paginated?page=${page + 1}&limit=${limit}`;
+      const res = await axios.get(url);
+      setTripTable(res.data.trips || res.data);
+      setTotalTrips(res.data.totalRecords || res.data.length || 0);
+    } catch (err) {
+      console.error("Error fetching trips:", err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const res = await axios.delete(`${API}/${id}`);
+      alert(res.data.msg || "Trip deleted.");
+      setReload(!reload);
+    } catch (err) {
+      console.error("Failed to delete trip:", err);
     }
   };
 
@@ -113,32 +128,16 @@ const TripAnalytics = () => {
 
   return (
     <Box p="1.5rem 2.5rem" backgroundColor={theme.palette.primary[400]} minHeight="100vh">
-      <FlexBetween>
-        <Header title="Trip Analytics" />
-      </FlexBetween>
+      <Header title="Trips Dashboard" subtitle="Analytics and trip records" />
 
-      {/* Dashboard: Overall Stats */}
-      <Box mt="2rem">
-        <Typography variant="h6" mb={2}>OVERALL STATS</Typography>
+      {/* ==== OVERALL STATS ==== */}
+      <Box mb={4}>
+        <Typography variant="h6" mb={2}>Overall Stats</Typography>
         <Grid container spacing={3}>
           {stats.map((stat, idx) => (
             <Grid item xs={12} sm={6} md={3} key={idx}>
-              <Paper
-                elevation={3}
-                sx={{
-                  p: 2,
-                  textAlign: "center",
-                  borderRadius: "0.75rem",
-                  transition: "all 0.2s ease-in-out",
-                  "&:hover": {
-                    transform: "scale(1.03)",
-                    boxShadow: `0 4px 20px ${theme.palette.secondary[300]}`,
-                  },
-                }}
-              >
-                <Typography variant="subtitle2" color="textSecondary">
-                  {stat.label}
-                </Typography>
+              <Paper elevation={3} sx={{ p: 2, textAlign: "center", borderRadius: "0.75rem" }}>
+                <Typography variant="subtitle2" color="textSecondary">{stat.label}</Typography>
                 <Typography variant="h5" fontWeight="bold" color={theme.palette.secondary[500]}>
                   {stat.value}
                 </Typography>
@@ -148,73 +147,94 @@ const TripAnalytics = () => {
         </Grid>
       </Box>
 
-      {/* Metrics Chart */}
-      <Box mt="4rem">
-        <Typography variant="h6" mb={2}>Monthly Metrics Overview</Typography>
+      {/* ==== MONTHLY CHART ==== */}
+      <Box mb={4}>
+        <Typography variant="h6" mb={2}>Monthly Metrics</Typography>
         {chartData && (
-          <Box display="flex" gap={4} flexWrap="wrap" justifyContent="center">
-            <Box width={{ xs: "100%", md: "45%" }}>
-              <Bar
-                data={chartData}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: { display: false },
-                    title: { display: true, text: "Monthly Breakdown", font: { size: 16 } },
-                  },
-                }}
-              />
-            </Box>
-            <Box width={{ xs: "100%", md: "45%" }}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Bar data={chartData} options={{ responsive: true, plugins: { legend: { display: false } } }} />
+            </Grid>
+            <Grid item xs={12} md={6}>
               <Line
                 data={{
                   labels: chartData.labels,
-                  datasets: [
-                    {
-                      label: "Growth Trend",
-                      data: chartData.datasets[0].data,
-                      borderColor: "#ff9800",
-                      backgroundColor: "rgba(255,152,0,0.2)",
-                      tension: 0.4,
-                      fill: true,
-                    },
-                  ],
+                  datasets: [{
+                    label: "Growth",
+                    data: chartData.datasets[0].data,
+                    borderColor: "#2196f3",
+                    backgroundColor: "rgba(33,150,243,0.2)",
+                    fill: true,
+                    tension: 0.4,
+                  }],
                 }}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: { display: false },
-                  },
-                }}
+                options={{ responsive: true, plugins: { legend: { display: false } } }}
               />
-            </Box>
-          </Box>
+            </Grid>
+          </Grid>
         )}
       </Box>
 
-      {/* Paginated Trip Table */}
-      <Box mt="4rem" backgroundColor={theme.palette.background.alt} borderRadius="0.75rem" p="2rem">
+      {/* ==== FILTER + TABLE ==== */}
+      <Box mb={2} display="flex" gap={2} alignItems="center">
+        <TextField
+          label="Filter by User ID"
+          value={userIdFilter}
+          onChange={(e) => setUserIdFilter(e.target.value)}
+          size="small"
+        />
+        <Button variant="contained" onClick={() => fetchPaginatedTrips(page, rowsPerPage)}>Apply</Button>
+        <Button variant="outlined" onClick={() => {
+          setUserIdFilter("");
+          setPage(0);
+          setReload(!reload);
+        }}>Clear</Button>
+      </Box>
+
+      <Paper elevation={3} sx={{ p: 2, borderRadius: "0.75rem" }}>
         <Typography variant="h6" mb={2}>Trip Records</Typography>
         <Table>
           <TableHead>
             <TableRow>
               <TableCell>User</TableCell>
               <TableCell>Motor</TableCell>
-              <TableCell>Distance</TableCell>
-              <TableCell>Fuel</TableCell>
-              <TableCell>Expense</TableCell>
+              <TableCell>Est. Distance</TableCell>
+              <TableCell>Actual Distance</TableCell>
+              <TableCell>ETA → Arrival</TableCell>
+              <TableCell>Duration</TableCell>
+              <TableCell>Fuel (Est / Actual)</TableCell>
+              <TableCell>Destination</TableCell>
+              <TableCell>Status</TableCell>
               <TableCell>Date</TableCell>
+              <TableCell>Action</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {tripTable.map((trip, i) => (
-              <TableRow key={i}>
+            {tripTable.map((trip) => (
+              <TableRow key={trip._id}>
                 <TableCell>{trip.userId?.name || "Unknown"}</TableCell>
-                <TableCell>{trip.motorId?.model || "N/A"}</TableCell>
+                <TableCell>
+                  {trip.motorId?.nickname || "N/A"}
+                  <br />
+                  {trip.motorId?.motorcycleId?.model
+                    ? `${trip.motorId.motorcycleId.model} (${trip.motorId.motorcycleId.engineDisplacement}cc)`
+                    : "Model N/A"}
+                </TableCell>
                 <TableCell>{safeFixed(trip.distance)} km</TableCell>
-                <TableCell>{safeFixed(trip.fuelUsed)} L</TableCell>
-                <TableCell>₱ {safeFixed(trip.totalCost)}</TableCell>
-                <TableCell>{trip.createdAt ? new Date(trip.createdAt).toLocaleDateString() : "-"}</TableCell>
+                <TableCell>{safeFixed(trip.actualDistance)} km</TableCell>
+                <TableCell>{trip.eta} → {trip.timeArrived}</TableCell>
+                <TableCell>{trip.duration} mins</TableCell>
+                <TableCell>
+                  {trip.fuelUsedMin}-{trip.fuelUsedMax} L<br />
+                  {trip.actualFuelUsedMin && trip.actualFuelUsedMax &&
+                    <i>{trip.actualFuelUsedMin}-{trip.actualFuelUsedMax} L</i>}
+                </TableCell>
+                <TableCell>{trip.destination}</TableCell>
+                <TableCell>{trip.status}</TableCell>
+                <TableCell>{new Date(trip.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell>
+                  <IconButton onClick={() => handleDelete(trip._id)}><Delete /></IconButton>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -228,9 +248,9 @@ const TripAnalytics = () => {
           onRowsPerPageChange={handleChangeRowsPerPage}
           rowsPerPageOptions={[5, 10, 20]}
         />
-      </Box>
+      </Paper>
     </Box>
   );
 };
 
-export default TripAnalytics;
+export default AdminTripsDashboard;

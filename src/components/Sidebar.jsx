@@ -33,6 +33,9 @@ const navItems = [
   { section: "Admin" },
   { text: "User Management", text2: "UserManagement", icon: <People /> },
   { text: "Add Motor", text2: "addMotor", icon: <People /> },
+  { text: "User Motor", text2: "userMotor", icon: <People /> },
+  { text: "Trips", text2: "trips", icon: <People /> },
+
   // { section: "System" },
   // { text: "Settings", text2: "Settings", icon: <SettingsOutlined /> },
 ];
