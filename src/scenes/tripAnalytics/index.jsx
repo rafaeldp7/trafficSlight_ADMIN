@@ -147,9 +147,15 @@ const AdminTripsDashboard = () => {
         </Grid>
       </Box>
 
+<<<<<<< HEAD
       {/* ==== MONTHLY CHART ==== */}
       <Box mb={4}>
         <Typography variant="h6" mb={2}>Monthly Metrics</Typography>
+=======
+     
+      <Box mt="4rem">
+        <Typography variant="h6" mb={2}>Monthly Metrics Overview</Typography>
+>>>>>>> fc58cab94a5a9452bfde10e30f86e3b5a5e413cf
         {chartData && (
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
