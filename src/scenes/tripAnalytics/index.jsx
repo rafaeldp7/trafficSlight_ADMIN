@@ -130,7 +130,6 @@ const AdminTripsDashboard = () => {
     <Box p="1.5rem 2.5rem" backgroundColor={theme.palette.primary[400]} minHeight="100vh">
       <Header title="Trips Dashboard" subtitle="Analytics and trip records" />
 
-      {/* ==== OVERALL STATS ==== */}
       <Box mb={4}>
         <Typography variant="h6" mb={2}>Overall Stats</Typography>
         <Grid container spacing={3}>
@@ -147,15 +146,9 @@ const AdminTripsDashboard = () => {
         </Grid>
       </Box>
 
-<<<<<<< HEAD
-      {/* ==== MONTHLY CHART ==== */}
+
       <Box mb={4}>
         <Typography variant="h6" mb={2}>Monthly Metrics</Typography>
-=======
-     
-      <Box mt="4rem">
-        <Typography variant="h6" mb={2}>Monthly Metrics Overview</Typography>
->>>>>>> fc58cab94a5a9452bfde10e30f86e3b5a5e413cf
         {chartData && (
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
@@ -181,7 +174,7 @@ const AdminTripsDashboard = () => {
         )}
       </Box>
 
-      {/* ==== FILTER + TABLE ==== */}
+
       <Box mb={2} display="flex" gap={2} alignItems="center">
         <TextField
           label="Filter by User ID"
@@ -260,3 +253,4 @@ const AdminTripsDashboard = () => {
 };
 
 export default AdminTripsDashboard;
+   
