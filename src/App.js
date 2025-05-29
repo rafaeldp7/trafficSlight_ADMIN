@@ -14,7 +14,7 @@ import SystemLogsAndSecurity from "scenes/systemLogsAndSecurity";
 import TripAnalytics from "scenes/tripAnalytics";
 import AddMotor from "scenes/addMotor";
 import UserMotor from "scenes/userMotor";
-
+import GasStations from "scenes/gasStations";
 
 function App() {
   const mode = useSelector((state) => state.global.mode);
@@ -36,6 +36,7 @@ function App() {
               <Route path="/Settings" element={<Settings />} />
               <Route path="/addMotor" element={<AddMotor />} />
               <Route path="/userMotor" element={<UserMotor />} />
+              <Route path="/gasStations" element={<GasStations />} />
 
               
             </Route>

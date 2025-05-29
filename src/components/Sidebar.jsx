@@ -23,7 +23,7 @@ import {
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import FlexBetween from "./FlexBetween";
-import Image from "assets/logo_trafficSlight.png";
+
 
 const navItems = [
   { section: "Navigation" },
@@ -34,7 +34,9 @@ const navItems = [
   { text: "User Management", text2: "UserManagement", icon: <People /> },
   { text: "Add Motor", text2: "addMotor", icon: <People /> },
   { text: "User Motor", text2: "userMotor", icon: <People /> },
-  { text: "Trips", text2: "trips", icon: <People /> },
+  { text: "Traffic Reports", text2: "reports", icon: <People /> },
+  { text: "Gas Stations", text2: "gasStations", icon: <People /> },
+
 
   // { section: "System" },
   // { text: "Settings", text2: "Settings", icon: <SettingsOutlined /> },
@@ -83,7 +85,9 @@ const Sidebar = ({
                   <Box
                     component="img"
                     alt="logo"
-                    src={Image}
+                    src="/assets/logo_trafficSlight.png"
+
+
                     height="50%"
                     width="100%"
                     borderRadius="5px"

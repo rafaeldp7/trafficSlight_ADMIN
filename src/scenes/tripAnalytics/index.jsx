@@ -47,7 +47,7 @@ const AdminTripsDashboard = () => {
 
   const fetchOverallStats = async () => {
     try {
-      const res = await axios.get(`${API}/analytics`);
+      const res = await axios.get(`${API}/analytics/summary`);
       const data = res.data;
       setStats([
         { label: "Total Trips", value: data.totalTrips },
@@ -63,7 +63,7 @@ const AdminTripsDashboard = () => {
 
   const fetchMonthlyStats = async () => {
     try {
-      const res = await axios.get(`${API}/summary/month`);
+      const res = await axios.get(`${API}/analytics/monthy`);
       const data = res.data;
       setMonthlyStats([
         { label: "Trips This Month", value: data.tripsThisMonth },
@@ -94,8 +94,8 @@ const AdminTripsDashboard = () => {
   const fetchPaginatedTrips = async (page, limit) => {
     try {
       const url = userIdFilter
-        ? `${API}/user-trips/${userIdFilter}`
-        : `${API}/paginated?page=${page + 1}&limit=${limit}`;
+        ? `${API}/admin/user/${userIdFilter}`
+        : `${API}/paginate?page=${page + 1}&limit=${limit}`;
       const res = await axios.get(url);
       setTripTable(res.data.trips || res.data);
       setTotalTrips(res.data.totalRecords || res.data.length || 0);
