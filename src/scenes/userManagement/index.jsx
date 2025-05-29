@@ -135,7 +135,7 @@ const UserManagement = () => {
     const blob = new Blob([buffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
-    saveAs(blob, "User_Data_EcoBantay.xlsx");
+    saveAs(blob, "User_Data_TrafficSlight.xlsx");
   };
 
   const columns = [
