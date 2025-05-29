@@ -15,8 +15,10 @@ import {
   InputAdornment,
   Divider,
   TablePagination,
+  Grid,
+  alpha,
 } from "@mui/material";
-import { Delete, Edit, Search } from "@mui/icons-material";
+import { Delete, Edit, Search, TwoWheeler, Person, DriveEta } from "@mui/icons-material";
 import Header from "components/Header";
 import FlexBetween from "components/FlexBetween";
 
@@ -110,70 +112,368 @@ const UserMotor = () => {
   );
 
   return (
-    <Box p="1.5rem 2.5rem" backgroundColor={theme.palette.background.default}>
-      <FlexBetween>
-        <Header title="User Motors Manager" />
-      </FlexBetween>
+    <Box p="1.5rem 2.5rem" sx={{ backgroundColor: theme.palette.background.default }}>
+      {/* Header Section */}
+      <Box mb={4}>
+        <FlexBetween>
+          <Box>
+            <Header title="User Motors Manager" />
+            <Typography variant="subtitle1" color="text.secondary" mt={1}>
+              Manage user motorcycle assignments and preferences
+            </Typography>
+          </Box>
+        </FlexBetween>
+      </Box>
+
+      {/* Dashboard Summary */}
+      <Box mb={4}>
+        <Typography variant="h5" color="text.primary" fontWeight="bold" mb={3}>
+          Overview
+        </Typography>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <Paper 
+              elevation={0}
+              sx={{ 
+                p: 3,
+                height: '100%',
+                borderRadius: 2,
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? alpha(theme.palette.secondary.main, 0.15) 
+                  : alpha(theme.palette.secondary.main, 0.08),
+                border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? alpha(theme.palette.secondary.main, 0.25) 
+                    : alpha(theme.palette.secondary.main, 0.15),
+                  transform: 'translateY(-2px)'
+                }
+              }}
+            >
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h6" color="text.primary" gutterBottom sx={{ opacity: 0.9 }}>
+                    Total Assignments
+                  </Typography>
+                  <Typography variant="h3" color="secondary.main" fontWeight="bold">
+                    {userMotors.length}
+                  </Typography>
+                </Box>
+                <Box 
+                  sx={{ 
+                    p: 2, 
+                    borderRadius: '50%', 
+                    backgroundColor: alpha(theme.palette.secondary.main, 0.2)
+                  }}
+                >
+                  <DriveEta sx={{ fontSize: 30, color: theme.palette.secondary.main }} />
+                </Box>
+              </Box>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Paper 
+              elevation={0}
+              sx={{ 
+                p: 3,
+                height: '100%',
+                borderRadius: 2,
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? alpha(theme.palette.info.main, 0.15) 
+                  : alpha(theme.palette.info.main, 0.08),
+                border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? alpha(theme.palette.info.main, 0.25) 
+                    : alpha(theme.palette.info.main, 0.15),
+                  transform: 'translateY(-2px)'
+                }
+              }}
+            >
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h6" color="text.primary" gutterBottom sx={{ opacity: 0.9 }}>
+                    Users with Motors
+                  </Typography>
+                  <Typography variant="h3" color="info.main" fontWeight="bold">
+                    {new Set(userMotors.map(m => m.userId)).size}
+                  </Typography>
+                </Box>
+                <Box 
+                  sx={{ 
+                    p: 2, 
+                    borderRadius: '50%', 
+                    backgroundColor: alpha(theme.palette.info.main, 0.2)
+                  }}
+                >
+                  <Person sx={{ fontSize: 30, color: theme.palette.info.main }} />
+                </Box>
+              </Box>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Paper 
+              elevation={0}
+              sx={{ 
+                p: 3,
+                height: '100%',
+                borderRadius: 2,
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? alpha(theme.palette.success.main, 0.15) 
+                  : alpha(theme.palette.success.main, 0.08),
+                border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? alpha(theme.palette.success.main, 0.25) 
+                    : alpha(theme.palette.success.main, 0.15),
+                  transform: 'translateY(-2px)'
+                }
+              }}
+            >
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h6" color="text.primary" gutterBottom sx={{ opacity: 0.9 }}>
+                    Nicknamed Motors
+                  </Typography>
+                  <Typography variant="h3" color="success.main" fontWeight="bold">
+                    {userMotors.filter(m => m.nickname).length}
+                  </Typography>
+                </Box>
+                <Box 
+                  sx={{ 
+                    p: 2, 
+                    borderRadius: '50%', 
+                    backgroundColor: alpha(theme.palette.success.main, 0.2)
+                  }}
+                >
+                  <TwoWheeler sx={{ fontSize: 30, color: theme.palette.success.main }} />
+                </Box>
+              </Box>
+            </Paper>
+          </Grid>
+        </Grid>
+      </Box>
 
       {/* Form */}
-      <Paper elevation={3} sx={{ p: 3, my: 3, maxWidth: 600 }}>
-        <Typography variant="h6">{editingId ? "Edit" : "Add"} User Motor</Typography>
-        <form onSubmit={handleSubmit}>
-          <TextField fullWidth label="User ID" name="userId" value={formData.userId} onChange={handleChange} margin="normal" />
-          <TextField fullWidth label="Motorcycle ID" name="motorcycleId" value={formData.motorcycleId} onChange={handleChange} margin="normal" />
-          <TextField fullWidth label="Nickname" name="nickname" value={formData.nickname} onChange={handleChange} margin="normal" />
-          <Box mt={2} display="flex" gap={2}>
-            <Button type="submit" variant="contained">{editingId ? "Update" : "Save"}</Button>
-            {editingId && (
-              <Button variant="outlined" color="secondary" onClick={() => {
-                setEditingId(null);
-                setFormData({ userId: "", motorcycleId: "", nickname: "" });
-              }}>Cancel</Button>
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 3,
+          mb: 4,
+          borderRadius: 2,
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+        }}
+      >
+        <Typography variant="h5" color="text.primary" fontWeight="bold" mb={3}>
+          {editingId ? "Edit Assignment" : "New Assignment"}
+        </Typography>
+        <Divider sx={{ mb: 3 }} />
+        <Box maxWidth={800} mx="auto">
+          <form onSubmit={handleSubmit}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={6}>
+                <TextField 
+                  required 
+                  fullWidth 
+                  label="User ID" 
+                  name="userId" 
+                  value={formData.userId} 
+                  onChange={handleChange}
+                  sx={{
+                    mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                      '&:hover fieldset': {
+                        borderColor: theme.palette.secondary.main,
+                      },
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField 
+                  required 
+                  fullWidth 
+                  label="Motorcycle ID" 
+                  name="motorcycleId" 
+                  value={formData.motorcycleId} 
+                  onChange={handleChange}
+                  sx={{
+                    mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                      '&:hover fieldset': {
+                        borderColor: theme.palette.secondary.main,
+                      },
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField 
+                  fullWidth 
+                  label="Nickname" 
+                  name="nickname" 
+                  value={formData.nickname} 
+                  onChange={handleChange}
+                  sx={{
+                    mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                      '&:hover fieldset': {
+                        borderColor: theme.palette.secondary.main,
+                      },
+                    },
+                  }}
+                />
+              </Grid>
+            </Grid>
+            <Box mt={2} display="flex" gap={2}>
+              <Button 
+                type="submit" 
+                fullWidth 
+                variant="contained"
+                sx={{
+                  py: 1.5,
+                  backgroundColor: theme.palette.secondary.main,
+                  '&:hover': {
+                    backgroundColor: theme.palette.secondary.dark,
+                  }
+                }}
+              >
+                {editingId ? "Update Assignment" : "Create Assignment"}
+              </Button>
+              {editingId && (
+                <Button 
+                  fullWidth 
+                  variant="outlined" 
+                  onClick={() => {
+                    setEditingId(null);
+                    setFormData({ userId: "", motorcycleId: "", nickname: "" });
+                  }}
+                  sx={{
+                    py: 1.5,
+                    borderColor: alpha(theme.palette.secondary.main, 0.5),
+                    color: theme.palette.secondary.main,
+                    '&:hover': {
+                      borderColor: theme.palette.secondary.main,
+                      backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                    }
+                  }}
+                >
+                  Cancel
+                </Button>
+              )}
+            </Box>
+            {message && (
+              <Typography mt={2} textAlign="center" color={message.includes("✅") ? "success.main" : "error.main"}>
+                {message}
+              </Typography>
             )}
-          </Box>
-          {message && <Typography mt={2} color={message.includes("✅") ? "green" : "red"}>{message}</Typography>}
-        </form>
+          </form>
+        </Box>
       </Paper>
 
       {/* Search */}
-      <TextField
-        fullWidth
-        placeholder="Search by nickname..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <Search />
-            </InputAdornment>
-          ),
+      <Paper 
+        elevation={2}
+        sx={{ 
+          p: 2, 
+          mb: 4,
+          borderRadius: 2,
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
         }}
-        sx={{ mb: 2 }}
-      />
+      >
+        <Box display="flex" gap={2} alignItems="center">
+          <TextField
+            fullWidth
+            placeholder="Search by nickname..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            InputProps={{
+              startAdornment: <Search sx={{ mr: 1, color: theme.palette.text.secondary }} />,
+            }}
+            sx={{
+              backgroundColor: theme.palette.mode === 'light' 
+                ? alpha(theme.palette.common.black, 0.02)
+                : alpha(theme.palette.common.white, 0.02),
+              '& .MuiOutlinedInput-root': {
+                '&:hover fieldset': {
+                  borderColor: theme.palette.secondary.main,
+                },
+              },
+            }}
+          />
+        </Box>
+      </Paper>
 
       {/* Table */}
-      <Paper>
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          mb: 4,
+          borderRadius: 2,
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          overflow: 'hidden',
+        }}
+      >
+        <Box p={3}>
+          <Typography variant="h5" color="text.primary" fontWeight="bold" mb={3}>
+            User Motor Assignments
+          </Typography>
+          <Divider sx={{ mb: 3 }} />
+        </Box>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>User</TableCell>
-              <TableCell>Motorcycle</TableCell>
-              <TableCell>Nickname</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>User</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Motorcycle</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Nickname</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredMotors.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((motor) => (
-              <TableRow key={motor._id}>
-                <TableCell>{motor.userId?.name || motor.userId}</TableCell>
-                <TableCell>{motor.motorcycleId?.model || motor.motorcycleId}</TableCell>
-                <TableCell>{motor.nickname}</TableCell>
-                <TableCell>
-                  <IconButton onClick={() => handleEdit(motor)}><Edit /></IconButton>
-                  <IconButton onClick={() => handleDelete(motor._id)}><Delete /></IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
+            {filteredMotors
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((motor) => (
+                <TableRow 
+                  key={motor._id}
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: theme.palette.mode === 'dark' 
+                        ? alpha(theme.palette.secondary.main, 0.1)
+                        : alpha(theme.palette.secondary.main, 0.05),
+                    },
+                  }}
+                >
+                  <TableCell>{motor.userId?.name || motor.userId}</TableCell>
+                  <TableCell>{motor.motorcycleId?.model || motor.motorcycleId}</TableCell>
+                  <TableCell>{motor.nickname}</TableCell>
+                  <TableCell>
+                    <IconButton 
+                      onClick={() => handleEdit(motor)}
+                      sx={{ 
+                        color: theme.palette.secondary.main,
+                        '&:hover': { backgroundColor: alpha(theme.palette.secondary.main, 0.1) }
+                      }}
+                    >
+                      <Edit />
+                    </IconButton>
+                    <IconButton 
+                      onClick={() => handleDelete(motor._id)}
+                      sx={{ 
+                        color: theme.palette.error.main,
+                        '&:hover': { backgroundColor: alpha(theme.palette.error.main, 0.1) }
+                      }}
+                    >
+                      <Delete />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
         <TablePagination

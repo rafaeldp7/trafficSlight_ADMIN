@@ -14,6 +14,7 @@ import {
   IconButton,
   TablePagination,
   useTheme,
+  alpha,
 } from "@mui/material";
 import { Delete } from "@mui/icons-material";
 import { Bar, Line } from "react-chartjs-2";
@@ -127,17 +128,45 @@ const AdminTripsDashboard = () => {
   };
 
   return (
-    <Box p="1.5rem 2.5rem" backgroundColor={theme.palette.primary[400]} minHeight="100vh">
+    <Box p="1.5rem 2.5rem" sx={{ backgroundColor: theme.palette.background.default }} minHeight="100vh">
       <Header title="Trips Dashboard" subtitle="Analytics and trip records" />
 
       <Box mb={4}>
-        <Typography variant="h6" mb={2}>Overall Stats</Typography>
+        <Typography variant="h6" mb={2} color="text.primary" fontWeight="bold">Overall Stats</Typography>
         <Grid container spacing={3}>
           {stats.map((stat, idx) => (
             <Grid item xs={12} sm={6} md={3} key={idx}>
-              <Paper elevation={3} sx={{ p: 2, textAlign: "center", borderRadius: "0.75rem" }}>
-                <Typography variant="subtitle2" color="textSecondary">{stat.label}</Typography>
-                <Typography variant="h5" fontWeight="bold" color={theme.palette.secondary[500]}>
+              <Paper 
+                elevation={0} 
+                sx={{ 
+                  p: 3,
+                  borderRadius: 2,
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? alpha(theme.palette.secondary.main, 0.15) 
+                    : alpha(theme.palette.secondary.main, 0.08),
+                  border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    backgroundColor: theme.palette.mode === 'dark' 
+                      ? alpha(theme.palette.secondary.main, 0.25) 
+                      : alpha(theme.palette.secondary.main, 0.15),
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
+                <Typography 
+                  variant="subtitle2" 
+                  color="text.primary" 
+                  gutterBottom 
+                  sx={{ opacity: 0.9 }}
+                >
+                  {stat.label}
+                </Typography>
+                <Typography 
+                  variant="h3" 
+                  color="secondary.main" 
+                  fontWeight="bold"
+                >
                   {stat.value}
                 </Typography>
               </Paper>
@@ -146,34 +175,88 @@ const AdminTripsDashboard = () => {
         </Grid>
       </Box>
 
-
       <Box mb={4}>
-        <Typography variant="h6" mb={2}>Monthly Metrics</Typography>
+        <Typography variant="h6" mb={2} color="text.primary" fontWeight="bold">Monthly Metrics</Typography>
         {chartData && (
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
-              <Bar data={chartData} options={{ responsive: true, plugins: { legend: { display: false } } }} />
+              <Paper 
+                elevation={3} 
+                sx={{ 
+                  p: 2,
+                  borderRadius: 2,
+                  backgroundColor: theme.palette.background.paper,
+                  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`
+                }}
+              >
+                <Bar data={chartData} options={{ 
+                  responsive: true, 
+                  plugins: { 
+                    legend: { 
+                      display: false,
+                      labels: {
+                        color: theme.palette.text.primary
+                      }
+                    }
+                  },
+                  scales: {
+                    x: {
+                      ticks: { color: theme.palette.text.primary }
+                    },
+                    y: {
+                      ticks: { color: theme.palette.text.primary }
+                    }
+                  }
+                }} />
+              </Paper>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Line
-                data={{
-                  labels: chartData.labels,
-                  datasets: [{
-                    label: "Growth",
-                    data: chartData.datasets[0].data,
-                    borderColor: "#2196f3",
-                    backgroundColor: "rgba(33,150,243,0.2)",
-                    fill: true,
-                    tension: 0.4,
-                  }],
+              <Paper 
+                elevation={3} 
+                sx={{ 
+                  p: 2,
+                  borderRadius: 2,
+                  backgroundColor: theme.palette.background.paper,
+                  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`
                 }}
-                options={{ responsive: true, plugins: { legend: { display: false } } }}
-              />
+              >
+                <Line
+                  data={{
+                    labels: chartData.labels,
+                    datasets: [{
+                      label: "Growth",
+                      data: chartData.datasets[0].data,
+                      borderColor: theme.palette.secondary.main,
+                      backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                      fill: true,
+                      tension: 0.4,
+                    }],
+                  }}
+                  options={{ 
+                    responsive: true, 
+                    plugins: { 
+                      legend: { 
+                        display: false,
+                        labels: {
+                          color: theme.palette.text.primary
+                        }
+                      }
+                    },
+                    scales: {
+                      x: {
+                        ticks: { color: theme.palette.text.primary }
+                      },
+                      y: {
+                        ticks: { color: theme.palette.text.primary }
+                      }
+                    }
+                  }}
+                />
+              </Paper>
             </Grid>
           </Grid>
         )}
       </Box>
-
 
       <Box mb={2} display="flex" gap={2} alignItems="center">
         <TextField
@@ -181,6 +264,9 @@ const AdminTripsDashboard = () => {
           value={userIdFilter}
           onChange={(e) => setUserIdFilter(e.target.value)}
           size="small"
+          sx={{
+            backgroundColor: theme.palette.mode === 'light' ? '#ffffff' : theme.palette.background.paper
+          }}
         />
         <Button variant="contained" onClick={() => fetchPaginatedTrips(page, rowsPerPage)}>Apply</Button>
         <Button variant="outlined" onClick={() => {
@@ -190,8 +276,19 @@ const AdminTripsDashboard = () => {
         }}>Clear</Button>
       </Box>
 
-      <Paper elevation={3} sx={{ p: 2, borderRadius: "0.75rem" }}>
-        <Typography variant="h6" mb={2}>Trip Records</Typography>
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 3,
+          borderRadius: 2,
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          "& .MuiTableCell-root": {
+            color: theme.palette.text.primary
+          }
+        }}
+      >
+        <Typography variant="h6" mb={3} color="text.primary" fontWeight="bold">Trip Records</Typography>
         <Table>
           <TableHead>
             <TableRow>
@@ -210,29 +307,57 @@ const AdminTripsDashboard = () => {
           </TableHead>
           <TableBody>
             {tripTable.map((trip) => (
-              <TableRow key={trip._id}>
+              <TableRow 
+                key={trip._id}
+                sx={{
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? alpha(theme.palette.primary.main, 0.1) 
+                    : theme.palette.grey[50],
+                  '&:hover': {
+                    backgroundColor: theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.primary.main, 0.2)
+                      : theme.palette.grey[100],
+                    transition: 'all 0.2s ease'
+                  }
+                }}
+              >
                 <TableCell>{trip.userId?.name || "Unknown"}</TableCell>
                 <TableCell>
                   {trip.motorId?.nickname || "N/A"}
                   <br />
-                  {trip.motorId?.motorcycleId?.model
-                    ? `${trip.motorId.motorcycleId.model} (${trip.motorId.motorcycleId.engineDisplacement}cc)`
-                    : "Model N/A"}
+                  <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                    {trip.motorId?.motorcycleId?.model
+                      ? `${trip.motorId.motorcycleId.model} (${trip.motorId.motorcycleId.engineDisplacement}cc)`
+                      : "Model N/A"}
+                  </Typography>
                 </TableCell>
                 <TableCell>{safeFixed(trip.distance)} km</TableCell>
                 <TableCell>{safeFixed(trip.actualDistance)} km</TableCell>
                 <TableCell>{trip.eta} → {trip.timeArrived}</TableCell>
                 <TableCell>{trip.duration} mins</TableCell>
                 <TableCell>
-                  {trip.fuelUsedMin}-{trip.fuelUsedMax} L<br />
-                  {trip.actualFuelUsedMin && trip.actualFuelUsedMax &&
-                    <i>{trip.actualFuelUsedMin}-{trip.actualFuelUsedMax} L</i>}
+                  {trip.fuelUsedMin}-{trip.fuelUsedMax} L
+                  {trip.actualFuelUsedMin && trip.actualFuelUsedMax && (
+                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontStyle: 'italic' }}>
+                      {trip.actualFuelUsedMin}-{trip.actualFuelUsedMax} L
+                    </Typography>
+                  )}
                 </TableCell>
                 <TableCell>{trip.destination}</TableCell>
                 <TableCell>{trip.status}</TableCell>
                 <TableCell>{new Date(trip.createdAt).toLocaleDateString()}</TableCell>
                 <TableCell>
-                  <IconButton onClick={() => handleDelete(trip._id)}><Delete /></IconButton>
+                  <IconButton 
+                    onClick={() => handleDelete(trip._id)}
+                    sx={{ 
+                      color: theme.palette.error.main,
+                      '&:hover': {
+                        backgroundColor: alpha(theme.palette.error.main, 0.1)
+                      }
+                    }}
+                  >
+                    <Delete />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -246,6 +371,9 @@ const AdminTripsDashboard = () => {
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
           rowsPerPageOptions={[5, 10, 20]}
+          sx={{
+            color: theme.palette.text.primary
+          }}
         />
       </Paper>
     </Box>

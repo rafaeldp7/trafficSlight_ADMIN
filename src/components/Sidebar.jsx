@@ -85,15 +85,15 @@ const Sidebar = ({
                   <Box
                     component="img"
                     alt="logo"
-                    src="/assets/logo_trafficSlight.png"
-
-
+                    src={theme.palette.mode === "dark" 
+                      ? "/assets/logo_trafficSlight_dark.png"
+                      : "/assets/logo_trafficSlight.png"
+                    }
                     height="50%"
                     width="100%"
                     borderRadius="5px"
                     sx={{
                       objectFit: "cover",
-                      //backgroundColor: theme.palette.primary[600],
                     }}
                   />
                 </Box>
@@ -140,10 +140,27 @@ const Sidebar = ({
                             : "transparent",
                         color:
                           active === text2
-                            ? theme.palette.primary[600]
+                            ? theme.palette.mode === "dark"
+                              ? theme.palette.primary[600]
+                              : "#ffffff"
                             : theme.palette.secondary[100],
                         borderRadius: 0,
                         pl: "1rem",
+                        transition: "all 0.2s",
+                        "&:hover": {
+                          backgroundColor: active === text2
+                            ? theme.palette.mode === "dark"
+                              ? theme.palette.secondary[200]  // Brighter teal for dark mode active
+                              : theme.palette.secondary[500]  // Deeper teal for light mode active
+                            : theme.palette.mode === "dark"
+                              ? `rgba(${theme.palette.secondary[300]}, 0.2)`  // Semi-transparent teal for dark mode
+                              : theme.palette.secondary[100],  // Light teal for light mode
+                          borderLeft: `4px solid ${
+                            active === text2
+                              ? theme.palette.primary[600]
+                              : theme.palette.secondary[300]
+                          }`,
+                        },
                       }}
                     >
                       <ListItemIcon
@@ -151,15 +168,53 @@ const Sidebar = ({
                           ml: "1rem",
                           color:
                             active === text2
-                              ? theme.palette.primary[600]
+                              ? theme.palette.mode === "dark"
+                                ? theme.palette.primary[600]
+                                : "#ffffff"
                               : theme.palette.secondary[200],
+                          transition: "color 0.2s",
+                          ".MuiListItemButton-root:hover &": {
+                            color:
+                              active === text2
+                                ? theme.palette.mode === "dark"
+                                  ? theme.palette.primary[600]
+                                  : "#ffffff"
+                                : theme.palette.mode === "dark"
+                                  ? theme.palette.secondary[100]
+                                  : theme.palette.secondary[500]
+                          }
                         }}
                       >
                         {icon}
                       </ListItemIcon>
-                      <ListItemText primary={text} />
+                      <ListItemText 
+                        primary={text}
+                        sx={{
+                          "& .MuiListItemText-primary": {
+                            transition: "color 0.2s",
+                          },
+                          ".MuiListItemButton-root:hover &": {
+                            color:
+                              active === text2
+                                ? theme.palette.mode === "dark"
+                                  ? theme.palette.primary[600]
+                                  : "#ffffff"
+                                : theme.palette.mode === "dark"
+                                  ? theme.palette.secondary[100]
+                                  : theme.palette.secondary[500]
+                          }
+                        }}
+                      />
                       {active === text2 && (
-                        <ChevronRightOutlined sx={{ ml: "auto" }} />
+                        <ChevronRightOutlined 
+                          sx={{ 
+                            ml: "auto",
+                            color: theme.palette.mode === "dark"
+                              ? theme.palette.primary[600]
+                              : "#ffffff",
+                            transition: "color 0.2s"
+                          }} 
+                        />
                       )}
                     </ListItemButton>
                   </ListItem>

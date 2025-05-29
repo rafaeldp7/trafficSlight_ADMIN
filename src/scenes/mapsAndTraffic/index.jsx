@@ -10,8 +10,9 @@ import {
   Pagination,
   CircularProgress,
   useTheme,
-  Snackbar, Alert,
-  
+  Snackbar,
+  Alert,
+  alpha,
 } from "@mui/material";
 
 const API = "https://ts-backend-1-jyit.onrender.com";
@@ -65,8 +66,8 @@ const getGasIcon = (brand = "") => {
 
 
 const MapsAndTraffic = () => {
+  const theme = useTheme();
   
-
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey:
       process.env.REACT_APP_GOOGLE_MAPS_API_KEY ||
@@ -289,19 +290,87 @@ const handleDelete = async (id) => {
 
 
   return (
-    <Box p={4}>
-      {/* 🔢 Metrics */}
-      <Typography variant="h6" mb={1}>
-        {}
+    <Box p={4} sx={{ backgroundColor: theme.palette.background.default }}>
+      {/* Dashboard Overview */}
+      <Typography variant="h5" mb={3} color="text.primary" fontWeight="bold">
+        Dashboard Overview
       </Typography>
-      <Box display="flex" justifyContent="space-between" mb={3}>
-        <Paper sx={{ p: 2, width: "49%" }}>
-          <Typography variant="h6">Total Reports</Typography>
-          <Typography variant="h4">{metrics.reportCount}</Typography>
+      <Box 
+        display="flex" 
+        gap={3} 
+        mb={4}
+        flexDirection={{ xs: 'column', md: 'row' }}
+      >
+        <Paper 
+          elevation={0}
+          sx={{ 
+            p: 3, 
+            flex: 1,
+            borderRadius: 2,
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? alpha(theme.palette.secondary.main, 0.15) 
+              : alpha(theme.palette.secondary.main, 0.08),
+            border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? alpha(theme.palette.secondary.main, 0.25) 
+                : alpha(theme.palette.secondary.main, 0.15),
+              transform: 'translateY(-2px)'
+            }
+          }}
+        >
+          <Typography 
+            variant="h6" 
+            color="text.primary" 
+            gutterBottom 
+            sx={{ opacity: 0.9 }}
+          >
+            Total Reports
+          </Typography>
+          <Typography 
+            variant="h3" 
+            color="secondary.main" 
+            fontWeight="bold"
+          >
+            {metrics.reportCount}
+          </Typography>
         </Paper>
-        <Paper sx={{ p: 2, width: "49%" }}>
-          <Typography variant="h6">Total Gas Stations</Typography>
-          <Typography variant="h4">{metrics.stationCount}</Typography>
+
+        <Paper 
+          elevation={0}
+          sx={{ 
+            p: 3, 
+            flex: 1,
+            borderRadius: 2,
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? alpha(theme.palette.secondary.main, 0.15) 
+              : alpha(theme.palette.secondary.main, 0.08),
+            border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? alpha(theme.palette.secondary.main, 0.25) 
+                : alpha(theme.palette.secondary.main, 0.15),
+              transform: 'translateY(-2px)'
+            }
+          }}
+        >
+          <Typography 
+            variant="h6" 
+            color="text.primary" 
+            gutterBottom 
+            sx={{ opacity: 0.9 }}
+          >
+            Total Gas Stations
+          </Typography>
+          <Typography 
+            variant="h3" 
+            color="secondary.main" 
+            fontWeight="bold"
+          >
+            {metrics.stationCount}
+          </Typography>
         </Paper>
       </Box>
 
@@ -316,288 +385,243 @@ const handleDelete = async (id) => {
           <CircularProgress />
         </Box>
       ) : (
-        <GoogleMap
-          mapContainerStyle={{ width: "100%", height: "500px" }}
-          center={defaultCenter}
-          zoom={13}
-          onLoad={handleMapLoad}
-          onClick={(e) => {
-            const lat = e.latLng.lat();
-            const lng = e.latLng.lng();
-            setForm({ ...form, lat, lng });
-            setMarkerPreview({ lat, lng });
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            backgroundColor: theme.palette.background.paper 
           }}
         >
-          {reports.map((r, i) => (
-            <Marker
-              key={i}
-              position={{ lat: r.location.latitude, lng: r.location.longitude }}
-              icon={getReportIcon()}
-              onClick={() => setSelectedMarker({ type: "report", data: r })}
-            />
-          ))}
-          {Array.isArray(stations) &&
-            stations.length > 0 &&
-            stations.map((s) => (
+          <GoogleMap
+            mapContainerStyle={{ width: "100%", height: "500px", borderRadius: "8px" }}
+            center={defaultCenter}
+            zoom={13}
+            onLoad={handleMapLoad}
+            onClick={(e) => {
+              const lat = e.latLng.lat();
+              const lng = e.latLng.lng();
+              setForm({ ...form, lat, lng });
+              setMarkerPreview({ lat, lng });
+            }}
+          >
+            {reports.map((r, i) => (
               <Marker
-                key={s._id || s.name + s.lat}
-                
-                position={{
-                  lat: s.location.coordinates[1], // correct: latitude
-                  lng: s.location.coordinates[0], // correct: longitude
-                }}
-                icon={getGasIcon(s.name)}
-                onClick={() => setSelectedMarker({ type: "station", data: s })}
+                key={i}
+                position={{ lat: r.location.latitude, lng: r.location.longitude }}
+                icon={getReportIcon()}
+                onClick={() => setSelectedMarker({ type: "report", data: r })}
               />
             ))}
+            {Array.isArray(stations) &&
+              stations.length > 0 &&
+              stations.map((s) => (
+                <Marker
+                  key={s._id || s.name + s.lat}
+                  
+                  position={{
+                    lat: s.location.coordinates[1], // correct: latitude
+                    lng: s.location.coordinates[0], // correct: longitude
+                  }}
+                  icon={getGasIcon(s.name)}
+                  onClick={() => setSelectedMarker({ type: "station", data: s })}
+                />
+              ))}
 
-          {markerPreview && (
-            <Marker
-              position={markerPreview}
-              draggable
-              onDragEnd={(e) => {
-                const lat = e.latLng.lat();
-                const lng = e.latLng.lng();
-                setForm({ ...form, lat, lng });
-                setMarkerPreview({ lat, lng });
-              }}
-            />
-          )}
-        </GoogleMap>
+            {markerPreview && (
+              <Marker
+                position={markerPreview}
+                draggable
+                onDragEnd={(e) => {
+                  const lat = e.latLng.lat();
+                  const lng = e.latLng.lng();
+                  setForm({ ...form, lat, lng });
+                  setMarkerPreview({ lat, lng });
+                }}
+              />
+            )}
+          </GoogleMap>
+        </Paper>
       )}
 
+      {/* Reports and Stations Lists */}
+      <Box display="flex" mt={4} gap={3}>
+        <Paper sx={{ p: 3, flex: 1, backgroundColor: theme.palette.background.paper }}>
+          <Typography variant="h6" color="text.primary" gutterBottom fontWeight="bold">
+            Reports
+          </Typography>
+          {currentReports.map((r, i) => (
+            <Box
+              key={i}
+              mt={2}
+              p={2.5}
+              border={`1px solid ${theme.palette.divider}`}
+              borderRadius={2}
+              onClick={() => zoomToLocation(r.location.latitude, r.location.longitude)}
+              sx={{
+                cursor: "pointer",
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? alpha(theme.palette.primary.main, 0.1) 
+                  : theme.palette.grey[50],
+                '&:hover': {
+                  backgroundColor: theme.palette.mode === 'dark'
+                    ? alpha(theme.palette.primary.main, 0.2)
+                    : theme.palette.grey[100],
+                  transform: 'translateY(-2px)',
+                  transition: 'all 0.2s ease'
+                }
+              }}
+            >
+              <Typography variant="subtitle1" color="text.primary" fontWeight="medium">
+                📝 <strong>{r.reportType}</strong>
+              </Typography>
+
+              <Typography variant="body2" mt={1} color="text.primary">
+                📄 <strong>Description:</strong> {r.description}
+              </Typography>
+
+              <Typography variant="body2" mt={1} color="text.primary">
+                📍 <strong>Location:</strong> {r.location.latitude}, {r.location.longitude}
+              </Typography>
+
+              <Typography variant="body2" mt={1} color="text.primary">
+                🕒 <strong>Timestamp:</strong> {new Date(r.timestamp).toLocaleString()}
+              </Typography>
+            </Box>
+          ))}
+
+          <Box mt={3} display="flex" justifyContent="center">
+            <Pagination
+              count={Math.ceil(reports.length / ITEMS_PER_PAGE)}
+              page={reportPage}
+              onChange={(_, val) => setReportPage(val)}
+              color="primary"
+            />
+          </Box>
+        </Paper>
+
+        <Paper sx={{ p: 3, flex: 1, backgroundColor: theme.palette.background.paper }}>
+          <Typography variant="h6" color="text.primary" gutterBottom fontWeight="bold">
+            Gas Stations
+          </Typography>
+          {currentStations.map((s) => (
+            <Box
+              key={s._id}
+              ref={(el) => (stationRefs.current[s._id] = el)}
+              mt={2}
+              p={2.5}
+              border={`1px solid ${theme.palette.divider}`}
+              borderRadius={2}
+              onClick={() => zoomToLocation(s.location.coordinates[1], s.location.coordinates[0])}
+              sx={{
+                cursor: "pointer",
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? alpha(theme.palette.secondary.main, 0.1) 
+                  : theme.palette.grey[50],
+                '&:hover': {
+                  backgroundColor: theme.palette.mode === 'dark'
+                    ? alpha(theme.palette.secondary.main, 0.2)
+                    : theme.palette.grey[100],
+                  transform: 'translateY(-2px)',
+                  transition: 'all 0.2s ease'
+                }
+              }}
+            >
+              <Typography variant="subtitle1" color="text.primary" fontWeight="medium">
+                <strong>{s.name}</strong> ({s.brand})
+              </Typography>
+
+              {s.address && (
+                <Typography variant="body2" mt={1} color="text.primary">
+                  📍 {s.address.street}, {s.address.barangay || ""}, {s.address.city || ""}, {s.address.province || ""}
+                </Typography>
+              )}
+
+              <Typography variant="body2" mt={1} color="text.primary">
+                ⛽ <strong>Gasoline:</strong> {s.fuelPrices?.gasoline ?? "N/A"} PHP | 
+                🛢️ <strong>Diesel:</strong> {s.fuelPrices?.diesel ?? "N/A"} PHP | 
+                ⭐ <strong>Premium:</strong> {s.fuelPrices?.premium ?? "N/A"} PHP
+              </Typography>
+
+              <Typography variant="body2" mt={1} color="text.primary">
+                🕒 <strong>Open Hours:</strong> {s.openHours || "N/A"}
+              </Typography>
+
+              <Typography variant="body2" mt={1} color="text.primary">
+                🔁 <strong>Price Source:</strong> {s.priceSource} | 
+                📅 <strong>Last Updated:</strong> {new Date(s.lastUpdated).toLocaleString()}
+              </Typography>
+
+              {s.servicesOffered?.length > 0 && (
+                <Typography variant="body2" mt={1} color="text.primary">
+                  🛠️ <strong>Services:</strong> {s.servicesOffered.join(", ")}
+                </Typography>
+              )}
+
+              <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="primary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(s);
+                  }}
+                  sx={{
+                    minWidth: '80px',
+                    fontWeight: 'medium'
+                  }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(s._id);
+                  }}
+                  sx={{
+                    minWidth: '80px',
+                    fontWeight: 'medium'
+                  }}
+                >
+                  Delete
+                </Button>
+              </Box>
+            </Box>
+          ))}
+
+          <Box mt={3} display="flex" justifyContent="center">
+            <Pagination
+              count={Math.ceil((stations?.length || 0) / ITEMS_PER_PAGE)}
+              page={stationPage}
+              onChange={(_, val) => setStationPage(val)}
+              color="secondary"
+            />
+          </Box>
+        </Paper>
+      </Box>
+
+      {/* Add Station Button */}
       <Button
         variant="contained"
+        color="primary"
         onClick={() => setOpenModal(true)}
-        sx={{ mt: 2 }}
+        sx={{
+          mt: 3,
+          mb: 3,
+          px: 4,
+          py: 1.5,
+          fontWeight: 'bold'
+        }}
       >
         + Add Gas Station
       </Button>
 
-      {/* 📄 Pagination Lists */}
-      <Box display="flex" mt={4} gap={3}>
-<Paper sx={{ p: 2, flex: 1 }}>
-  <Typography variant="h6">Reports</Typography>
-  {currentReports.map((r, i) => (
-    <Box
-      key={i}
-      mt={2}
-      p={2}
-      border="1px solid #ddd"
-      borderRadius={2}
-      onClick={() => zoomToLocation(r.location.latitude, r.location.longitude)}
-      sx={{ cursor: "pointer", backgroundColor: "#f9f9f9" }}
-    >
-      <Typography variant="subtitle1">
-        📝 <strong>{r.reportType}</strong>
-      </Typography>
-
-      <Typography variant="body2" mt={0.5}>
-        📄 <strong>Description:</strong> {r.description}
-      </Typography>
-
-      <Typography variant="body2" mt={0.5}>
-        📍 <strong>Location:</strong> {r.location.latitude}, {r.location.longitude}
-      </Typography>
-
-      <Typography variant="body2" mt={0.5}>
-        🕒 <strong>Timestamp:</strong> {new Date(r.timestamp).toLocaleString()}
-      </Typography>
-    </Box>
-  ))}
-
-  <Pagination
-    count={Math.ceil(reports.length / ITEMS_PER_PAGE)}
-    page={reportPage}
-    onChange={(_, val) => setReportPage(val)}
-    sx={{ mt: 2 }}
-  />
-</Paper>
-
-
-<Paper sx={{ p: 2, flex: 1 }}>
-  <Typography variant="h6">Gas Stations</Typography>
-  {currentStations.map((s) => (
-    <Box
-      key={s._id}
-      ref={(el) => (stationRefs.current[s._id] = el)}
-      mt={2}
-      p={2}
-      border="1px solid #ddd"
-      borderRadius={2}
-      onClick={() =>
-        zoomToLocation(s.location.coordinates[1], s.location.coordinates[0])
-      }
-      sx={{ cursor: "pointer", backgroundColor: "#f9f9f9" }}
-    >
-      <Typography variant="subtitle1"><strong>{s.name}</strong> ({s.brand})</Typography>
-
-      {s.address && (
-        <Typography variant="body2" mt={0.5}>
-          📍 {s.address.street}, {s.address.barangay || ""}, {s.address.city || ""}, {s.address.province || ""}
-        </Typography>
-      )}
-
-      <Typography variant="body2" mt={1}>
-        ⛽ <strong>Gasoline:</strong> {s.fuelPrices?.gasoline ?? "N/A"} PHP | 
-        🛢️ <strong>Diesel:</strong> {s.fuelPrices?.diesel ?? "N/A"} PHP | 
-        ⭐ <strong>Premium:</strong> {s.fuelPrices?.premium ?? "N/A"} PHP
-      </Typography>
-
-      <Typography variant="body2" mt={0.5}>
-        🕒 <strong>Open Hours:</strong> {s.openHours || "N/A"}
-      </Typography>
-
-      <Typography variant="body2" mt={0.5}>
-        🔁 <strong>Price Source:</strong> {s.priceSource} | 📅 <strong>Last Updated:</strong> {new Date(s.lastUpdated).toLocaleString()}
-      </Typography>
-
-      {s.servicesOffered?.length > 0 && (
-        <Typography variant="body2" mt={0.5}>
-          🛠️ <strong>Services:</strong> {s.servicesOffered.join(", ")}
-        </Typography>
-      )}
-
-      <Box mt={1} display="flex" justifyContent="flex-end" gap={1}>
-        <Button size="small" color="error" onClick={(e) => { e.stopPropagation(); handleEdit(s); }}>
-          Edit
-        </Button>
-        <Button size="small" color="error" onClick={(e) => { e.stopPropagation(); handleDelete(s._id); }}>
-          Delete
-        </Button>
-      </Box>
-    </Box>
-  ))}
-
-  <Pagination
-    count={Math.ceil((stations?.length || 0) / ITEMS_PER_PAGE)}
-    page={stationPage}
-    onChange={(_, val) => setStationPage(val)}
-    sx={{ mt: 2 }}
-  />
-</Paper>
-
-      </Box>
-<Snackbar
-  open={snackbar.open}
-  autoHideDuration={3000}
-  onClose={() => setSnackbar({ ...snackbar, open: false })}
-  anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
->
-  <Alert
-    onClose={() => setSnackbar({ ...snackbar, open: false })}
-    severity={snackbar.severity}
-    sx={{ width: "100%" }}
-  >
-    {snackbar.message}
-  </Alert>
-</Snackbar>
-
-      {/* ➕ Modal */}
-<Modal
-  open={openModal}
-  onClose={() => {
-    setOpenModal(false);
-    setMarkerPreview(null);
-    setForm({
-      name: "",
-      brand: "",
-      gasoline: "",
-      diesel: "",
-      servicesOffered: [],
-      openHours: "",
-      lat: "",
-      lng: "",
-    });
-    setEditingId(null);
-  }}
->
-  <Paper
-    sx={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      p: 4,
-      width: 400,
-    }}
-  >
-    <Typography variant="h6" mb={2}>
-      {editingId ? "Edit Station" : "Add Station"}
-    </Typography>
-
-    <TextField
-      label="Name"
-      fullWidth
-      sx={{ mb: 2 }}
-      value={form.name}
-      onChange={(e) => setForm({ ...form, name: e.target.value })}
-    />
-    <TextField
-      label="Brand"
-      fullWidth
-      sx={{ mb: 2 }}
-      value={form.brand}
-      onChange={(e) => setForm({ ...form, brand: e.target.value })}
-    />
-    <TextField
-      label="Gasoline Price"
-      fullWidth
-      sx={{ mb: 2 }}
-      type="number"
-      value={form.gasoline}
-      onChange={(e) => setForm({ ...form, gasoline: e.target.value })}
-    />
-    <TextField
-      label="Diesel Price"
-      fullWidth
-      sx={{ mb: 2 }}
-      type="number"
-      value={form.diesel}
-      onChange={(e) => setForm({ ...form, diesel: e.target.value })}
-    />
-    <TextField
-  label="Premium Price"
-  fullWidth
-  sx={{ mb: 2 }}
-  type="number"
-  value={form.premium}
-  onChange={(e) => setForm({ ...form, premium: e.target.value })}
-/>
-    <TextField
-      label="Open Hours"
-      fullWidth
-      sx={{ mb: 2 }}
-      value={form.openHours}
-      onChange={(e) => setForm({ ...form, openHours: e.target.value })}
-    />
-    <TextField
-      label="Latitude"
-      fullWidth
-      sx={{ mb: 2 }}
-      value={form.lat}
-      onChange={(e) => setForm({ ...form, lat: e.target.value })}
-    />
-    <TextField
-      label="Longitude"
-      fullWidth
-      sx={{ mb: 2 }}
-      value={form.lng}
-      onChange={(e) => setForm({ ...form, lng: e.target.value })}
-    />
-
-    <Button
-      fullWidth
-      variant="contained"
-      color="primary"
-      onClick={handleSubmit}
-    >
-      {editingId ? "Update Station" : "Add Station"}
-    </Button>
-  </Paper>
-</Modal>
-
-      <Modal open={!!selectedMarker} onClose={() => setSelectedMarker(null)}>
+      {/* Modals */}
+      <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Paper
           sx={{
             position: "absolute",
@@ -605,87 +629,106 @@ const handleDelete = async (id) => {
             left: "50%",
             transform: "translate(-50%, -50%)",
             p: 4,
-            width: 400,
+            width: { xs: '90%', sm: 400 },
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            backgroundColor: theme.palette.background.paper
           }}
         >
-          {selectedMarker?.type === "station" && selectedMarker?.data && (
-<>
-  <Typography variant="h6" mb={2}>
-    Gas Station Options
-  </Typography>
+          <Typography variant="h6" mb={3} color="text.primary" fontWeight="bold">
+            {editingId ? "Edit Station" : "Add Station"}
+          </Typography>
 
-  <Typography mb={1}>
-    <strong>{selectedMarker.data.name}</strong> — {selectedMarker.data.brand}
-  </Typography>
+          <TextField
+            label="Name"
+            fullWidth
+            sx={{ mb: 2 }}
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+          <TextField
+            label="Brand"
+            fullWidth
+            sx={{ mb: 2 }}
+            value={form.brand}
+            onChange={(e) => setForm({ ...form, brand: e.target.value })}
+          />
+          <TextField
+            label="Gasoline Price"
+            fullWidth
+            sx={{ mb: 2 }}
+            type="number"
+            value={form.gasoline}
+            onChange={(e) => setForm({ ...form, gasoline: e.target.value })}
+          />
+          <TextField
+            label="Diesel Price"
+            fullWidth
+            sx={{ mb: 2 }}
+            type="number"
+            value={form.diesel}
+            onChange={(e) => setForm({ ...form, diesel: e.target.value })}
+          />
+          <TextField
+            label="Premium Price"
+            fullWidth
+            sx={{ mb: 2 }}
+            type="number"
+            value={form.premium}
+            onChange={(e) => setForm({ ...form, premium: e.target.value })}
+          />
+          <TextField
+            label="Open Hours"
+            fullWidth
+            sx={{ mb: 2 }}
+            value={form.openHours}
+            onChange={(e) => setForm({ ...form, openHours: e.target.value })}
+          />
+          <TextField
+            label="Latitude"
+            fullWidth
+            sx={{ mb: 2 }}
+            value={form.lat}
+            onChange={(e) => setForm({ ...form, lat: e.target.value })}
+          />
+          <TextField
+            label="Longitude"
+            fullWidth
+            sx={{ mb: 2 }}
+            value={form.lng}
+            onChange={(e) => setForm({ ...form, lng: e.target.value })}
+          />
 
-  {selectedMarker.data.fuelPrices && (
-    <Box mb={2}>
-      <Typography variant="body2">
-        ⛽ <strong>Gasoline:</strong>{" "}
-        {selectedMarker.data.fuelPrices.gasoline ?? "N/A"} PHP
-      </Typography>
-      <Typography variant="body2">
-        🛢️ <strong>Diesel:</strong>{" "}
-        {selectedMarker.data.fuelPrices.diesel ?? "N/A"} PHP
-      </Typography>
-    </Box>
-  )}
-
-  <Box display="flex" justifyContent="space-between">
-    <Button
-      variant="contained"
-      onClick={() => {
-        handleEdit(selectedMarker.data);
-        setSelectedMarker(null);
-      }}
-    >
-      Edit
-    </Button>
-    <Button
-      variant="outlined"
-      color="error"
-      onClick={() => {
-        handleDelete(selectedMarker.data._id);
-        setSelectedMarker(null);
-      }}
-    >
-      Delete
-    </Button>
-  </Box>
-</>
-
-          )}
-
-          {selectedMarker?.type === "report" && selectedMarker?.data && (
-            <>
-              <Typography variant="h6" mb={2}>
-                Traffic Report
-              </Typography>
-              <Typography mb={1}>
-                <strong>Type:</strong> {selectedMarker.data.reportType}
-              </Typography>
-              <Typography mb={2}>
-                <strong>Description:</strong> {selectedMarker.data.description}
-              </Typography>
-              <Button
-                fullWidth
-                variant="outlined"
-                color="error"
-                onClick={async () => {
-                  if (!window.confirm("Delete this report?")) return;
-                  await fetch(`${API}/api/reports/${selectedMarker.data._id}`, {
-                    method: "DELETE",
-                  });
-                  fetchReports();
-                  setSelectedMarker(null);
-                }}
-              >
-                Delete Report
-              </Button>
-            </>
-          )}
+          <Button
+            fullWidth
+            variant="contained"
+            color="primary"
+            onClick={handleSubmit}
+            sx={{
+              mt: 3,
+              py: 1.5,
+              fontWeight: 'bold'
+            }}
+          >
+            {editingId ? "Update Station" : "Add Station"}
+          </Button>
         </Paper>
       </Modal>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

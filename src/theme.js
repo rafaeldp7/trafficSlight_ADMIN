@@ -109,6 +109,22 @@ export const tokensDark = {
               },
             }),
       },
+      components: {
+        MuiTab: {
+          styleOverrides: {
+            root: {
+              color: mode === 'dark' ? tokensDark.grey[300] : tokensDark.grey[700],
+              '&:hover': {
+                color: mode === 'dark' ? tokensDark.secondary[300] : tokensDark.secondary[600],
+                backgroundColor: mode === 'dark' ? tokensDark.primary[500] : tokensDark.grey[50],
+              },
+              '&.Mui-selected': {
+                color: mode === 'dark' ? tokensDark.secondary[300] : tokensDark.secondary[600],
+              },
+            },
+          },
+        },
+      },
       typography: {
         fontFamily: ["Inter", "sans-serif"].join(","),
         fontSize: 12,
