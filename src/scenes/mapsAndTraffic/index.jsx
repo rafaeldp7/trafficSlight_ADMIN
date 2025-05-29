@@ -341,7 +341,7 @@ const handleDelete = async (id) => {
             stations.map((s) => (
               <Marker
                 key={s._id || s.name + s.lat}
-
+                
                 position={{
                   lat: s.location.coordinates[1], // correct: latitude
                   lng: s.location.coordinates[0], // correct: longitude
