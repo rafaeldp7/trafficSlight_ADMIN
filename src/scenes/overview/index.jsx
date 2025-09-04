@@ -60,7 +60,7 @@ const Overview = () => {
     fetchCount("/api/trips/count", setTotalTrips, "totalTrips");
     fetchCount("/api/user-motorRoutes/count/all", setTotalMotors, "totalUserMotors");
     fetchCount("/api/reports/count", setTotalReports, "totalReports");
-    fetchCount("/api/motorcycleRoutes/count", setTotalMotorcycles, "totalMotorcycles");
+    fetchCount("/api/motorcycles/count", setTotalMotorcycles, "totalMotorcycles");
     fetchCount("/api/fuel-logs/count", setTotalFuelLogs, "totalFuelLogs");
 
     // User growth chart data
