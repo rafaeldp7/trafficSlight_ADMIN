@@ -57,11 +57,11 @@ const Overview = () => {
     fetchCount("/api/auth/new-users-this-month", setNewUsersThisMonth, "count");
     fetchCount("/api/auth/first-user-name", setTopUser, "name");
 
-    fetchCount("/api/trips/", setTotalTrips, "totalTrips");
+    // fetchCount("/api/trips/", setTotalTrips, "totalTrips");
     fetchCount("/api/user-motors/count", setTotalMotors, "totalUserMotors");
     fetchCount("/api/reports/count", setTotalReports, "totalReports");
     fetchCount("/api/motorcycles/count", setTotalMotorcycles, "totalMotorcycles");
-    fetchCount("/api/fuel-logs/count", setTotalFuelLogs, "totalFuelLogs");
+    //fetchCount("/api/fuel-logs/count", setTotalFuelLogs, "totalFuelLogs");
 
     // User growth chart data
     fetch(`${REACT_LOCALHOST_IP}/api/auth/user-growth`)
@@ -88,8 +88,8 @@ const Overview = () => {
       >
         <StatBox title="Total Users" value={userCount} />
         <StatBox title="Total Motors Registered" value={totalMotors} />
-        <StatBox title="Total Trips" value={totalTrips} />
-        <StatBox title="Fuel Logs Recorded" value={totalFuelLogs} />
+       // <StatBox title="Total Trips" value={totalTrips} />
+        // <StatBox title="Fuel Logs Recorded" value={totalFuelLogs} />
         <StatBox title="New Users This Month" value={newUsersThisMonth} />
         <StatBox title="Reports Submitted" value={totalReports} />
         <StatBox title="Motorcycle Models" value={totalMotorcycles} />
