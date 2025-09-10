@@ -17,6 +17,7 @@ import {
   alpha,
   IconButton,
 } from "@mui/material";
+
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import {
   Edit,
@@ -26,6 +27,7 @@ import {
   LocationOn,
   AccessTime,
   AttachMoney,
+
 } from "@mui/icons-material";
 import axios from "axios";
 import Header from "components/Header";
@@ -339,12 +341,12 @@ const getStats = () => {
                     backgroundColor: alpha(theme.palette.success.main, 0.2)
                   }}
                 >
-                  <AttachMoney sx={{ fontSize: 30, color: theme.palette.success.main }} />
+                  <img src="/assets/PESOS.png" alt="PESOS Logo" width={40} height={25}/>
                 </Box>
               </Box>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={3}>
+          {/* <Grid item xs={12} md={3}>
             <Paper 
               elevation={0}
               sx={{ 
@@ -380,11 +382,11 @@ const getStats = () => {
                     backgroundColor: alpha(theme.palette.warning.main, 0.2)
                   }}
                 >
-                  <AttachMoney sx={{ fontSize: 30, color: theme.palette.warning.main }} />
+                  <img src="/assets/PESOS.png" alt="PESOS Logo" width={40} height={25}/>
                 </Box>
               </Box>
             </Paper>
-          </Grid>
+          </Grid> */}
           <Grid item xs={12} md={3}>
             <Paper 
               elevation={0}
@@ -421,7 +423,7 @@ const getStats = () => {
                     backgroundColor: alpha(theme.palette.info.main, 0.2)
                   }}
                 >
-                  <AttachMoney sx={{ fontSize: 30, color: theme.palette.info.main }} />
+                  <img src="/assets/PESOS.png" alt="PESOS Logo" width={40} height={25}/>
                 </Box>
               </Box>
             </Paper>
@@ -523,12 +525,12 @@ const getStats = () => {
                         ₱{s.fuelPrices?.gasoline || '-'}
                       </Typography>
                     </Grid>
-                    <Grid item xs={4}>
+                    {/* <Grid item xs={4}>
                       <Typography variant="caption" color="text.secondary">Diesel</Typography>
                       <Typography variant="body1" color="warning.main" fontWeight="bold">
                         ₱{s.fuelPrices?.diesel || '-'}
                       </Typography>
-                    </Grid>
+                    </Grid> */}
                     <Grid item xs={4}>
                       <Typography variant="caption" color="text.secondary">Premium</Typography>
                       <Typography variant="body1" color="info.main" fontWeight="bold">
@@ -714,7 +716,7 @@ const getStats = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            {/* <Grid item xs={12} md={4}>
               <TextField
                 label="Diesel (₱)"
                 value={form.fuelPrices.diesel}
@@ -733,7 +735,7 @@ const getStats = () => {
                   },
                 }}
               />
-            </Grid>
+            </Grid> */}
             <Grid item xs={12} md={4}>
               <TextField
                 label="Premium (₱)"
@@ -756,7 +758,7 @@ const getStats = () => {
             </Grid>
           </Grid>
 
-          <TextField
+          {/* <TextField
             label="Operating Hours"
             value={form.openHours}
             onChange={(e) => setForm({ ...form, openHours: e.target.value })}
@@ -770,7 +772,7 @@ const getStats = () => {
                 },
               },
             }}
-          />
+          /> */}
 
           <Typography variant="subtitle1" color="text.secondary" mt={2} mb={1}>
             Location

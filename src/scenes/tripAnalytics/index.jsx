@@ -22,6 +22,10 @@ import { Chart, registerables } from "chart.js";
 import axios from "axios";
 import Header from "components/Header";
 
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+
+dayjs.extend(customParseFormat);
 Chart.register(...registerables);
 const API = "https://ts-backend-1-jyit.onrender.com/api/trips";
 
@@ -35,6 +39,8 @@ const AdminTripsDashboard = () => {
   const [totalTrips, setTotalTrips] = useState(0);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [userIdFilter, setUserIdFilter] = useState("");
   const [reload, setReload] = useState(false);
 
@@ -52,10 +58,10 @@ const AdminTripsDashboard = () => {
       const data = res.data;
       setStats([
         { label: "Total Trips", value: data.totalTrips },
-        { label: "Total Distance", value: `${safeFixed(data.totalDistance)} km` },
-        { label: "Total Time", value: `${safeFixed(data.totalTime)} mins` },
-        { label: "Total Fuel", value: `${safeFixed(data.totalFuel)} L` },
-        { label: "Total Expense", value: `₱ ${safeFixed(data.totalExpense)}` },
+        // { label: "Total Distance", value: `${safeFixed(data.totalDistance)} km` },
+        // { label: "Total Time", value: `${safeFixed(data.totalTime)} mins` },
+        // { label: "Total Fuel", value: `${safeFixed(data.totalFuel)} L` },
+        // { label: "Total Expense", value: `₱ ${safeFixed(data.totalExpense)}` },
       ]);
     } catch (err) {
       console.error("Error fetching overall stats:", err);
@@ -93,17 +99,19 @@ const AdminTripsDashboard = () => {
   };
 
   const fetchPaginatedTrips = async (page, limit) => {
-    try {
-      const url = userIdFilter
-        ? `${API}/admin/user/${userIdFilter}`
-        : `${API}/paginate?page=${page + 1}&limit=${limit}`;
-      const res = await axios.get(url);
-      setTripTable(res.data.trips || res.data);
-      setTotalTrips(res.data.totalRecords || res.data.length || 0);
-    } catch (err) {
-      console.error("Error fetching trips:", err);
+  try {
+    let url = `${API}/paginate?page=${page + 1}&limit=${limit}`;
+    if (searchQuery) {
+      url += `&search=${encodeURIComponent(searchQuery)}`;
     }
-  };
+
+    const res = await axios.get(url);
+    setTripTable(res.data.trips || res.data);
+    setTotalTrips(res.data.totalRecords || res.data.length || 0);
+  } catch (err) {
+    console.error("Error fetching trips:", err);
+  }
+};
 
   const handleDelete = async (id) => {
     try {
@@ -126,6 +134,8 @@ const AdminTripsDashboard = () => {
     setPage(0);
     fetchPaginatedTrips(0, newLimit);
   };
+
+
 
   return (
     <Box p="1.5rem 2.5rem" sx={{ backgroundColor: theme.palette.background.default }} minHeight="100vh">
@@ -258,23 +268,37 @@ const AdminTripsDashboard = () => {
         )}
       </Box>
 
-      <Box mb={2} display="flex" gap={2} alignItems="center">
-        <TextField
-          label="Filter by User ID"
-          value={userIdFilter}
-          onChange={(e) => setUserIdFilter(e.target.value)}
-          size="small"
-          sx={{
-            backgroundColor: theme.palette.mode === 'light' ? '#ffffff' : theme.palette.background.paper
-          }}
-        />
-        <Button variant="contained" onClick={() => fetchPaginatedTrips(page, rowsPerPage)}>Apply</Button>
-        <Button variant="outlined" onClick={() => {
-          setUserIdFilter("");
-          setPage(0);
-          setReload(!reload);
-        }}>Clear</Button>
-      </Box>
+<Box mb={2} display="flex" gap={2} alignItems="center">
+  <TextField
+    label="Search trips..."
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    size="small"
+    sx={{
+      backgroundColor: theme.palette.mode === 'light' ? '#ffffff' : theme.palette.background.paper,
+      minWidth: 250
+    }}
+  />
+  <Button 
+    variant="contained" 
+    onClick={() => {
+      setPage(0);
+      fetchPaginatedTrips(0, rowsPerPage);
+    }}
+  >
+    Search
+  </Button>
+  <Button 
+    variant="outlined" 
+    onClick={() => {
+      setSearchQuery("");
+      setPage(0);
+      setReload(!reload);
+    }}
+  >
+    Clear
+  </Button>
+</Box>
 
       <Paper 
         elevation={3} 
@@ -292,17 +316,19 @@ const AdminTripsDashboard = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>User</TableCell>
-              <TableCell>Motor</TableCell>
-              <TableCell>Est. Distance</TableCell>
-              <TableCell>Actual Distance</TableCell>
-              <TableCell>ETA → Arrival</TableCell>
-              <TableCell>Duration</TableCell>
-              <TableCell>Fuel (Est / Actual)</TableCell>
-              <TableCell>Destination</TableCell>
-              <TableCell>Status</TableCell>
               <TableCell>Date</TableCell>
-              <TableCell>Action</TableCell>
+              <TableCell>Start → Arrival</TableCell>
+              <TableCell>Trip ID</TableCell>
+              <TableCell>Motor</TableCell>
+              {/* <TableCell>Est. Distance</TableCell> */}
+              <TableCell>Distance</TableCell>
+
+              {/* <TableCell>Duration</TableCell> */}
+              {/* <TableCell>Fuel (Est / Actual)</TableCell> */}
+              {/* <TableCell>Destination</TableCell> */}
+              <TableCell>Status</TableCell>
+              
+              {/* <TableCell>Action</TableCell> */}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -321,32 +347,34 @@ const AdminTripsDashboard = () => {
                   }
                 }}
               >
-                <TableCell>{trip.userId?.name || "Unknown"}</TableCell>
+                <TableCell>{new Date(trip.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell>{dayjs(trip.timeArrived, "h:mm A").subtract(trip.duration || 0, "minute").format("h:mm A")} → {trip.timeArrived}</TableCell>
+                <TableCell>{trip._id || "Unknown"}</TableCell>
                 <TableCell>
-                  {trip.motorId?.nickname || "N/A"}
-                  <br />
-                  <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                  <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
                     {trip.motorId?.motorcycleId?.model
                       ? `${trip.motorId.motorcycleId.model} (${trip.motorId.motorcycleId.engineDisplacement}cc)`
                       : "Model N/A"}
                   </Typography>
                 </TableCell>
-                <TableCell>{safeFixed(trip.distance)} km</TableCell>
+                {/* <TableCell>{safeFixed(trip.distance)} km</TableCell> */}
                 <TableCell>{safeFixed(trip.actualDistance)} km</TableCell>
-                <TableCell>{trip.eta} → {trip.timeArrived}</TableCell>
-                <TableCell>{trip.duration} mins</TableCell>
-                <TableCell>
-                  {trip.fuelUsedMin}-{trip.fuelUsedMax} L
+
+
+
+                {/* <TableCell>{trip.duration} mins</TableCell> */}
+                {/* <TableCell>
+                  {(trip.fuelUsedMin.toFixed(2))}-{(trip.fuelUsedMax).toFixed(2)} L
                   {trip.actualFuelUsedMin && trip.actualFuelUsedMax && (
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontStyle: 'italic' }}>
-                      {trip.actualFuelUsedMin}-{trip.actualFuelUsedMax} L
+                      {(trip.actualFuelUsedMin).toFixed(2)}-{(trip.actualFuelUsedMax).toFixed(2)} L
                     </Typography>
                   )}
-                </TableCell>
-                <TableCell>{trip.destination}</TableCell>
+                </TableCell> */}
+                {/* <TableCell>{trip.destination}</TableCell> */}
                 <TableCell>{trip.status}</TableCell>
-                <TableCell>{new Date(trip.createdAt).toLocaleDateString()}</TableCell>
-                <TableCell>
+                
+                {/* <TableCell>
                   <IconButton 
                     onClick={() => handleDelete(trip._id)}
                     sx={{ 
@@ -358,7 +386,7 @@ const AdminTripsDashboard = () => {
                   >
                     <Delete />
                   </IconButton>
-                </TableCell>
+                </TableCell> */}
               </TableRow>
             ))}
           </TableBody>

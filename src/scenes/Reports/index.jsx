@@ -187,7 +187,7 @@ const ReportsDashboard = () => {
   sortable: false,
   renderCell: (params) => (
     <Box>
-      <IconButton color="primary" onClick={() => handleEdit(params.row)}><EditIcon /></IconButton>
+      <IconButton color="error" onClick={() => handleEdit(params.row)}><EditIcon /></IconButton>
       <IconButton color="error" onClick={() => handleDelete(params.row._id)}><DeleteIcon /></IconButton>
       <IconButton
         color="secondary"
@@ -290,12 +290,14 @@ const ReportsDashboard = () => {
                 </Box>
                 <Box 
                   sx={{ 
-                    p: 2, 
+                    p: 1, 
                     borderRadius: '50%', 
                     backgroundColor: alpha(theme.palette.error.main, 0.2)
                   }}
                 >
-                  <Warning sx={{ fontSize: 30, color: theme.palette.error.main }} />
+
+                  <img src="/assets/reportMarkers/accident.png" alt="accident marker" height={"50%"} width={50} />
+                  {/* <Warning sx={{ fontSize: 30, color: theme.palette.error.main }} /> */}
                 </Box>
               </Box>
             </Paper>
@@ -331,12 +333,13 @@ const ReportsDashboard = () => {
                 </Box>
                 <Box 
                   sx={{ 
-                    p: 2, 
+                    p: 1, 
                     borderRadius: '50%', 
                     backgroundColor: alpha(theme.palette.warning.main, 0.2)
                   }}
                 >
-                  <TrafficRounded sx={{ fontSize: 30, color: theme.palette.warning.main }} />
+                  <img src="/assets/reportMarkers/traffic.png" alt="traffuc marker" height={"50%"} width={50} />
+                  {/* <TrafficRounded sx={{ fontSize: 30, color: theme.palette.warning.main }} /> */}
                 </Box>
               </Box>
             </Paper>
@@ -372,12 +375,13 @@ const ReportsDashboard = () => {
                 </Box>
                 <Box 
                   sx={{ 
-                    p: 2, 
+                    p: 1, 
                     borderRadius: '50%', 
                     backgroundColor: alpha(theme.palette.info.main, 0.2)
                   }}
                 >
-                  <Block sx={{ fontSize: 30, color: theme.palette.info.main }} />
+                  <img src="/assets/reportMarkers/closure.png" alt="road closure marker" height={"50%"} width={50} />
+                  {/* <Block sx={{ fontSize: 30, color: theme.palette.info.main }} /> */}
                 </Box>
               </Box>
             </Paper>
@@ -413,12 +417,13 @@ const ReportsDashboard = () => {
                 </Box>
                 <Box 
                   sx={{ 
-                    p: 2, 
+                    p: 1, 
                     borderRadius: '50%', 
                     backgroundColor: alpha(theme.palette.success.main, 0.2)
                   }}
                 >
-                  <ReportProblem sx={{ fontSize: 30, color: theme.palette.success.main }} />
+                  <img src="/assets/reportMarkers/hazard.png" alt="hazard marker" height={"50%"} width={50} />
+                  {/* <ReportProblem sx={{ fontSize: 30, color: theme.palette.success.main }} /> */}
                 </Box>
               </Box>
             </Paper>
@@ -653,7 +658,12 @@ const ReportsDashboard = () => {
         >
           <Typography variant="h5" color="text.primary" fontWeight="bold" mb={3}>
             {formData._id ? "Edit Report" : "New Report"}
+            
+            <Button variant="h5" color="text.primary" fontWeight="bold" mb={3}>
+              Verify
+            </Button>
           </Typography>
+          
           <Divider sx={{ mb: 3 }} />
           <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel>Report Type</InputLabel>

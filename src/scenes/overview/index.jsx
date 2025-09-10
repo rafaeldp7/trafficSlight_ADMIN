@@ -55,7 +55,7 @@ const Overview = () => {
 
     fetchCount("/api/auth/user-count", setUserCount, "count");
     fetchCount("/api/auth/new-users-this-month", setNewUsersThisMonth, "count");
-    fetchCount("/api/auth/first-user-name", setTopUser, "name");
+    // fetchCount("/api/auth/first-user-name", setTopUser, "name");
 
     // fetchCount("/api/trips/", setTotalTrips, "totalTrips");
     fetchCount("/api/user-motors/count", setTotalMotors, "totalUserMotors");
@@ -87,12 +87,13 @@ const Overview = () => {
         }}
       >
         <StatBox title="Total Users" value={userCount} />
+        <StatBox title="Total Reports" value={totalReports} />
         <StatBox title="Total Motors Registered" value={totalMotors} />
         
         <StatBox title="New Users This Month" value={newUsersThisMonth} />
-        <StatBox title="Reports Submitted" value={totalReports} />
+        <StatBox title="Active Reports" value={totalReports} />
         <StatBox title="Motorcycle Models" value={totalMotorcycles} />
-        <StatBox title="First Rider" value={topUser ?? "N/A"} />
+        {/* <StatBox title="First Rider" value={topUser ?? "N/A"} /> */}
       </Box>
 
       <Box mt="40px" height="100%" width="100%" alignItems="center" justifyContent="center">

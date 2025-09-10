@@ -403,39 +403,53 @@ const UserManagement = () => {
       </Grid>
 
       {/* Pie Chart */}
-      {barangayData && (
-        <Box mt={6}>
-          <Paper 
-            elevation={3} 
-            sx={{ 
-              maxWidth: 600, 
-              mx: "auto", 
-              p: 3,
-              borderRadius: 2,
-              backgroundColor: theme.palette.background.paper,
-              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`
-            }}
-          >
-            <Typography variant="h6" mb={2} color="text.primary" fontWeight="bold">
-              Users by Barangay Distribution
-            </Typography>
-            <Pie 
-              data={barangayData}
-              options={{
-                responsive: true,
-                plugins: {
-                  legend: {
-                    position: 'right',
-                    labels: {
-                      color: theme.palette.text.primary
-                    }
-                  }
-                }
-              }}
-            />
-          </Paper>
-        </Box>
-      )}
+{/* Bar Chart */}
+{barangayData && (
+  <Box mt={1}>
+    <Paper 
+      elevation={3} 
+      sx={{ 
+        maxWidth: "100%", 
+        mx: "100", 
+        p: 3,
+        borderRadius: 2,
+        backgroundColor: theme.palette.background.paper,
+        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`
+      }}
+    >
+      <Typography variant="h6" mb={2} color="text.primary" fontWeight="bold">
+        Users by Barangay Distribution
+      </Typography>
+      <Bar 
+        data={barangayData}
+        options={{
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false, // mas formal kung walang masyadong kulay legend
+            },
+            title: {
+              display: true,
+              text: "Number of Users per Barangay",
+              color: theme.palette.text.primary,
+              font: { size: 14 }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: theme.palette.text.primary }
+            },
+            y: {
+              ticks: { color: theme.palette.text.primary },
+              beginAtZero: true
+            }
+          }
+        }}
+      />
+    </Paper>
+  </Box>
+)}
+
     </Box>
   );
 };

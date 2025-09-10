@@ -67,7 +67,8 @@ export const tokensDark = {
       palette: {
         mode: mode,
         ...(mode === "dark"
-          ? {
+          ?
+           {
               // palette values for dark mode
               primary: {
                 ...tokensDark.primary,

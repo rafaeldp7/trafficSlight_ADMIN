@@ -20,22 +20,27 @@ import {
   People,
   BarChart,
   Map,
+  TwoWheeler,
+  LocalGasStation,
+  Traffic,
+  Report,
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import FlexBetween from "./FlexBetween";
 
 
 const navItems = [
-  { section: "Navigation" },
+  // { section: "Navigation" },
   { text: "Overview", text2: "overview", icon: <Dashboard /> },
-  { text: "Maps And Traffic", text2: "MapsAndTraffic", icon: <Map /> },
+  { text: "Map", text2: "MapsAndTraffic", icon: <Map /> },
+  { text: "Traffic Reports", text2: "reports", icon: <Traffic /> },
   { text: "Trips", text2: "TripAnalytics", icon: <Map /> },
-  { section: "Admin" },
+  // { section: "Admin" },
   { text: "User Management", text2: "UserManagement", icon: <People /> },
-  { text: "Add Motor", text2: "addMotor", icon: <People /> },
-  { text: "User Motor", text2: "userMotor", icon: <People /> },
-  { text: "Traffic Reports", text2: "reports", icon: <People /> },
-  { text: "Gas Stations", text2: "gasStations", icon: <People /> },
+  { text: "Motor Management", text2: "addMotor", icon: <TwoWheeler /> },
+  // { text: "User Motor", text2: "userMotor", icon: <People /> },
+  
+  { text: "Gas Stations", text2: "gasStations", icon: <LocalGasStation /> },
 
 
   // { section: "System" },
