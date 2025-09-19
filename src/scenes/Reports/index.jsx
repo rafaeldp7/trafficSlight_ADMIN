@@ -659,7 +659,7 @@ const handleSubmit = async () => {
                       Verified By Admin: {selectedReport.verified?.verifiedByAdmin }
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Verified By User: {selectedReport.address || "N/A"}
+                      Verified By User: {selectedReport.verified?.verifiedByUser || "N/A"}
                     </Typography>
                        
 
