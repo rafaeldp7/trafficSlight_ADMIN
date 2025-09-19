@@ -18,7 +18,7 @@ import {
   IconButton,
 } from "@mui/material";
 
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, Marker, useJsApiLoader, InfoWindow, InfoBox  } from "@react-google-maps/api";
 import {
   Edit,
   Delete,
@@ -35,7 +35,7 @@ import FlexBetween from "components/FlexBetween";
 
 const defaultCenter = { lat: 14.7006, lng: 120.9836 };
 const defaultZoom = 12;
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 3;
 const API_URL = "https://ts-backend-1-jyit.onrender.com/api/gas-stations";
 
 const getGasIcon = (brand = "") => {
@@ -46,6 +46,7 @@ const getGasIcon = (brand = "") => {
     caltex: "/assets/CALTEX.png",
     cleanfuel: "/assets/CLEANFUEL.png",
     flying: "/assets/FLYINGV.png",
+    "flying V": "/assets/FLYINGV.png",
     jetti: "/assets/JETTI.png",
     petrogazz: "/assets/PETROGAZZ.png",
     phoenix: "/assets/PHOENIX.png",
@@ -54,9 +55,12 @@ const getGasIcon = (brand = "") => {
     total: "/assets/TOTAL.png",
     unioil: "/assets/UNIOIL.png",
     dual: "/assets/UNIOIL.png",
+    pryce: "/assets/PETROGAZZ.png",
   };
+
   const match = Object.keys(iconMap).find((key) => lower.includes(key));
   return {
+    
     url: match ? iconMap[match] : "/assets/default.png",
     scaledSize: typeof window !== "undefined" && window.google
       ? new window.google.maps.Size(40, 40)
@@ -72,6 +76,7 @@ const GasStationsPage = () => {
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [selectedStation, setSelectedStation] = useState(null);
   const [form, setForm] = useState({
   name: "",
   brand: "",
@@ -243,8 +248,8 @@ const getStats = () => {
           </Button>
         </Box>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={3}>
+          <Grid container spacing={3} mb={4}>
+            <Grid item xs={12} md={4}>
             <Paper 
               elevation={0}
               sx={{ 
@@ -289,6 +294,7 @@ const getStats = () => {
                 <Box 
                   sx={{ 
                     p: 2, 
+                    
                     borderRadius: '50%', 
                     backgroundColor: theme.palette.mode === 'dark'
                       ? alpha(theme.palette.common.white, 0.12)
@@ -305,7 +311,7 @@ const getStats = () => {
               </Box>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} md={4}>
             <Paper 
               elevation={0}
               sx={{ 
@@ -387,7 +393,7 @@ const getStats = () => {
               </Box>
             </Paper>
           </Grid> */}
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} md={4}>
             <Paper 
               elevation={0}
               sx={{ 
@@ -431,10 +437,10 @@ const getStats = () => {
         </Grid>
       </Box>
 
-      <Box mb={2}>
+      {/* <Box mb={2}>
         <Typography>Total Stations: {filtered.length}</Typography>
         <Typography>Average Price: ₱{avgPrice}</Typography>
-      </Box>
+      </Box> */}
 
       <Grid container spacing={2}>
         <Grid item xs={12} md={4}>
@@ -452,6 +458,8 @@ const getStats = () => {
               Search Stations
             </Typography>
             <TextField
+              
+              autoComplete="off"
               fullWidth
               placeholder="Search by name..."
               value={search}
@@ -504,7 +512,7 @@ const getStats = () => {
                   <Box display="flex" alignItems="center" gap={2} mb={1}>
                     <Box 
                       component="img" 
-                      src={getGasIcon(s.brand).url}
+                      src={getGasIcon(s.name).url}
                       alt={s.brand}
                       sx={{ width: 40, height: 40 }}
                     />
@@ -512,8 +520,9 @@ const getStats = () => {
                       <Typography variant="subtitle1" fontWeight="bold">
                         {s.name}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {s.brand}
+                        <Typography variant="body2" color="text.secondary">
+                        { s.address.street || 
+                        'No address available'}
                       </Typography>
                     </Box>
                   </Box>
@@ -607,6 +616,92 @@ const getStats = () => {
             <Divider sx={{ mb: 3 }} />
             {isLoaded && (
               <Box sx={{ height: "80vh", borderRadius: 2, overflow: 'hidden' }}>
+  <GoogleMap
+    center={defaultCenter}
+    zoom={12}
+    mapContainerStyle={{ height: "100%", width: "100%" }}
+    onLoad={(map) => (mapRef.current = map)}
+  >
+    {stations.map((s) => (
+      <Marker
+        key={s._id}
+        position={{
+          lat: s.location.coordinates[1],
+          lng: s.location.coordinates[0],
+        }}
+        title={`${s.name} - ${s.address.street}`}
+        icon={getGasIcon(s.name)}
+        onClick={() => setSelectedStation(s)}
+        onDblClick={() => zoomToLocation(s.location.coordinates[1], s.location.coordinates[0])}
+      />
+    ))}
+
+    {selectedStation && (
+  <InfoBox
+    position={{
+      lat: selectedStation.location.coordinates[1],
+      lng: selectedStation.location.coordinates[0],
+    }}
+    options={{
+      closeBoxURL: "", // hides the default X
+      enableEventPropagation: true,
+    }}
+    onCloseClick={() => setSelectedStation(null)}
+  >
+    <div
+      style={{
+        backgroundColor: "white",
+        padding: "12px",
+        borderRadius: "8px",
+        boxShadow: "0px 2px 6px rgba(0,0,0,0.3)",
+        minWidth: "200px",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h3 style={{ margin: 0 }}>{selectedStation.name}</h3>
+        <span
+          style={{ cursor: "pointer", fontWeight: "bold", color: "#555" }}
+          onClick={() => setSelectedStation(null)}
+        >
+          ✕
+        </span>
+      </div>
+
+      {/* Address */}
+      <p style={{ margin: "4px 0" }}>{selectedStation.address.street}</p>
+
+      {/* Fuel Prices */}
+      <p style={{ margin: "4px 0" }}>
+        Gasoline: ₱{selectedStation.fuelPrices?.gasoline || "-"}
+      </p>
+      <p style={{ margin: "4px 0" }}>
+        Premium: ₱{selectedStation.fuelPrices?.premium || "-"}
+      </p>
+
+      {/* Edit Button */}
+      <button
+        style={{
+          marginTop: "8px",
+          padding: "6px 12px",
+          borderRadius: "6px",
+          border: "none",
+          backgroundColor: "#1976d2",
+          color: "white",
+          cursor: "pointer",
+        }}
+        onClick={() => handleEdit(selectedStation)}
+      >
+        Edit
+      </button>
+    </div>
+  </InfoBox>
+
+
+          )}
+        </GoogleMap>
+      </Box>
+      /*
+              <Box sx={{ height: "80vh", borderRadius: 2, overflow: 'hidden' }}>
                 <GoogleMap
                   center={defaultCenter}
                   zoom={12}
@@ -615,17 +710,25 @@ const getStats = () => {
                 >
                   {stations.map((s) => (
                     <Marker
+                      size="medium"
                       key={s._id}
+                      onClick={() => {
+                        zoomToLocation(s.location.coordinates[1], s.location.coordinates[0]);
+                        Toast.info(`${s.name} - ${s.brand}`);
+                        // toast.info(`${s.name} - ${s.brand}`);
+                      }}
                       position={{
                         lat: s.location.coordinates[1],
                         lng: s.location.coordinates[0],
                       }}
-                      title={`${s.name} - ${s.brand}`}
-                      icon={getGasIcon(s.brand)}
+                      title={`${s.name} - ${s.address.street}`}
+                      icon={getGasIcon(s.name)}
                     />
                   ))}
                 </GoogleMap>
               </Box>
+
+              */
             )}
           </Paper>
         </Grid>
@@ -822,18 +925,29 @@ const getStats = () => {
                 Click on the map to set location
               </Typography>
               <Box sx={{ height: 300, borderRadius: 2, overflow: 'hidden' }}>
-                <GoogleMap
-                  center={{ lat: form.location.lat, lng: form.location.lng }}
-                  zoom={defaultZoom}
-                  mapContainerStyle={{ height: "100%", width: "100%" }}
-                  onClick={(e) => {
-                    const lat = e.latLng.lat();
-                    const lng = e.latLng.lng();
-                    setForm({ ...form, location: { lat, lng } });
-                  }}
-                >
-                  <Marker position={form.location} />
-                </GoogleMap>
+<GoogleMap
+  center={{ lat: form.location.lat, lng: form.location.lng }}
+  zoom={defaultZoom}
+  mapContainerStyle={{ height: "100%", width: "100%" }}
+  onClick={(e) => {
+    const lat = e.latLng.lat();
+    const lng = e.latLng.lng();
+    setForm({ ...form, location: { lat, lng } });
+  }}
+>
+  {form.location.lat && form.location.lng && (
+    <Marker
+      position={form.location}
+      icon={{
+        url: "/assets/default.png", // put default.png inside /public/assets/
+        scaledSize: new window.google.maps.Size(50, 50),
+        anchor: new window.google.maps.Point(17, 34),
+      }}
+    />
+  )}
+</GoogleMap>
+
+
               </Box>
             </Box>
           )}

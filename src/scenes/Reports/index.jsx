@@ -15,17 +15,19 @@ import {
   useTheme,
   Divider,
   alpha,
+  Alert,
 } from "@mui/material";
+
 import { DataGrid } from "@mui/x-data-grid";
 import { Bar, Pie } from "react-chartjs-2";
 import { Chart, registerables } from "chart.js";
 import Header from "components/Header";
 import FlexBetween from "components/FlexBetween";
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, Marker, useJsApiLoader, InfoWindow, InfoBox, StandaloneSearchBox    } from "@react-google-maps/api";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import { Warning, TrafficRounded, Block, ReportProblem, Search } from "@mui/icons-material";
-
+import PlaceAutocompleteBox from "components/PlaceAutocompleteBox";
 Chart.register(...registerables);
 
 const API_BASE = "https://ts-backend-1-jyit.onrender.com/api/reports";
@@ -48,24 +50,46 @@ const ReportsDashboard = () => {
   const [typeFilter, setTypeFilter] = useState("All");
   const [chartData, setChartData] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ _id: null, reportType: "", description: "", latitude: "", longitude: "" });
+  const [formData, setFormData] = useState({ _id: null, reportType: "", description: "", latitude: "", longitude: "", address: "" });
   const [marker, setMarker] = useState(null);
   const mapRef = useRef(null);
+  const [selectedReport, setSelectedReport] = useState(null);
 
-
-  const zoomToLocation = (lat, lng) => {
-  if (mapRef.current) {
-    mapRef.current.panTo({ lat, lng });
-    mapRef.current.setZoom(16);
-  }
-};
-
+  //For search box
+  const searchBoxRef = useRef(null);
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4",
-  });
+  googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4", // or your key
+  libraries: ["places"], // 👈 REQUIRED for search box
+});
+  const zoomToLocation = (lat, lng) => {
+    if (mapRef.current) {
+      mapRef.current.panTo({ lat, lng });
+      mapRef.current.setZoom(16);
+    }
+  };
+  const getAddressFromCoords = async (lat, lng) => {
+    try {
+      const res = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
+      );
+      const data = await res.json();
+      if (data.status === "OK") {
+        return data.results[0]?.formatted_address || "Address not found";
+      }
+      return "Address not found";
+    } catch (err) {
+      console.error("Geocoding error:", err);
+      return "Error fetching address";
+    }
+  };
+
+
+  // const { isLoaded } = useJsApiLoader({
+  //   googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4",
+  // });
 
   useEffect(() => { fetchReports(); }, []);
-
+  console.log(reports);
   const fetchReports = async () => {
     try {
       const res = await fetch(`${API_BASE}`);
@@ -75,6 +99,7 @@ const ReportsDashboard = () => {
       setAllReports(data);
       setFiltered(data);
       processChart(data);
+      
     } catch (error) {
       console.error("Error fetching reports:", error);
     }
@@ -108,36 +133,62 @@ const ReportsDashboard = () => {
     });
   };
 
-  const handleSubmit = async () => {
-    try {
-      const payload = {
-        reportType: formData.reportType,
-        description: formData.description,
-        location: {
-          latitude: parseFloat(formData.latitude),
-          longitude: parseFloat(formData.longitude),
-        },
-      };
-      if (formData._id) {
-        await fetch(`${API_BASE}/${formData._id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        await fetch(API_BASE, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      }
-      setModalOpen(false);
-      resetForm();
-      fetchReports();
-    } catch (err) {
-      console.error("Submit error:", err);
+const handleSubmit = async () => {
+  try {
+    // ✅ Validation
+    if (!formData.reportType) {
+      alert("Please select a report type.");
+      return;
     }
-  };
+
+    if (!formData.latitude || !formData.longitude) {
+      alert("Please select a location on the map.");
+      return;
+    }
+
+    // ✅ Get address from coordinates
+    const address = await getAddressFromCoords(
+      formData.latitude,
+      formData.longitude
+    );
+
+    const payload = {
+      reportType: formData.reportType,
+      description: formData.description,
+      location: {
+        latitude: parseFloat(formData.latitude),
+        longitude: parseFloat(formData.longitude),
+      },
+      address: address || "Unknown address",
+      verified: { verifiedByAdmin: 0, verifiedByUser: 0 },
+    };
+
+    // ✅ Submit (Update or Create)
+    if (formData._id) {
+      await fetch(`${API_BASE}/${formData._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      await fetch(API_BASE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }
+
+    // ✅ Close modal & refresh
+    setModalOpen(false);
+    resetForm();
+    fetchReports();
+  } catch (err) {
+    console.error("Submit error:", err);
+    alert("Something went wrong while submitting. Please try again.");
+  }
+};
+
+
 
   const handleDelete = async (id) => {
     try {
@@ -160,10 +211,36 @@ const ReportsDashboard = () => {
     setModalOpen(true);
   };
 
+
   const resetForm = () => {
     setFormData({ _id: null, reportType: "", description: "", latitude: "", longitude: "" });
     setMarker(null);
   };
+
+  const handleVerifybyAdmin = async () => {
+    try {
+      const payload = {
+
+        //ADD SA NEW DATABASE
+        verified: {
+          verifiedByAdmin: 1,
+        }
+        
+      };
+
+        await fetch(`${API_BASE}/${formData._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      
+      
+      fetchReports();
+    } catch (err) {
+      console.error("Submit error:", err);
+    }
+  };
+
 
   const columns = [
     { field: "reportType", headerName: "Type", flex: 1 },
@@ -179,6 +256,12 @@ const ReportsDashboard = () => {
       headerName: "Location",
       flex: 1,
       valueGetter: (params) => `Lat: ${params.value.latitude}, Lng: ${params.value.longitude}`,
+    },
+        {
+      field: "address",
+      headerName: "Address",
+      flex: 1,
+      valueGetter: (params) => `${params.row?.address || "N/A"}`,
     },
 {
   field: "actions",
@@ -512,6 +595,12 @@ const ReportsDashboard = () => {
               {allReports.map((report) => (
                 <Marker
                   key={report._id}
+                  onClick={() => {
+                    // zoomToLocation(report.location.latitude, report.location.longitude);
+                    setSelectedReport(report);
+                  
+                  }}
+                  onDblClick={() =>  zoomToLocation(report.location.latitude, report.location.longitude)}
                   position={{ lat: report.location.latitude, lng: report.location.longitude }}
                   title={`${report.reportType} - ${report.description}`}
                   icon={{
@@ -520,6 +609,92 @@ const ReportsDashboard = () => {
                   }}
                 />
               ))}
+              {selectedReport && (
+                <InfoBox
+                  position={{
+                    lat: selectedReport.location.latitude,
+                    lng: selectedReport.location.longitude,
+                  }}
+                  options={{
+                    closeBoxURL: "", // para walang default X
+                    enableEventPropagation: true,
+                  }}
+                  onCloseClick={() => setSelectedReport(null)}
+                >
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      minWidth: 200,
+                      borderRadius: 2,
+                      boxShadow: 3,
+                      backgroundColor: "white",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        {selectedReport.reportType}
+                      </Typography>
+                      {/* custom close button */}
+                      <Typography
+                        sx={{ cursor: "pointer", fontWeight: "bold", color: "grey.600" }}
+                        onClick={() => setSelectedReport(null)}
+                      >
+                        ✕
+                      </Typography>
+                    </Box>
+
+                    <Typography variant="body2" color="text.secondary">
+                      Time:{" "}
+                      {selectedReport.timestamp
+                        ? new Date(selectedReport.timestamp).toLocaleString()
+                        : "N/A"}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Address: {selectedReport.address || "N/A"}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Description: {selectedReport.description || "N/A"}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Verified By Admin: {selectedReport.verified?.verifiedByAdmin }
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Verified By User: {selectedReport.address || "N/A"}
+                    </Typography>
+                       
+
+                    {/* <Box
+                      component="img"
+                      src="/assets/trafficSlight_logo.png"
+                      alt="Marker"
+                      sx={{ width: 50, height: 50, borderRadius: 2 }}
+                      
+                    /> */}
+                    <Box mt={1} display="flex" justifyContent="space-between" gap={1}>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => handleEdit(selectedReport)}
+                        
+                        >Edit</Button>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => handleVerifybyAdmin()}
+                        >Verify
+                      </Button>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        // onClick={call personnel}
+                        >Call
+                      </Button>
+                      </Box>
+                  </Box>
+                  
+                </InfoBox>
+              )}
+
             </GoogleMap>
           </Box>
         </Paper>
@@ -662,14 +837,17 @@ const ReportsDashboard = () => {
             <Button variant="h5" color="text.primary" fontWeight="bold" mb={3}>
               Verify
             </Button>
+            
           </Typography>
           
           <Divider sx={{ mb: 3 }} />
           <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Report Type</InputLabel>
+            <InputLabel
+            required>Report Type</InputLabel>
             <Select
               value={formData.reportType}
               label="Report Type"
+              required
               onChange={(e) => setFormData({ ...formData, reportType: e.target.value })}
               sx={{
                 '& .MuiOutlinedInput-notchedOutline': {
@@ -731,28 +909,103 @@ const ReportsDashboard = () => {
               />
             </Grid>
           </Grid>
-          {isLoaded && (
-            <Box mb={3}>
-              <Typography variant="subtitle2" color="text.secondary" mb={1}>
-                Click on the map to set location
-              </Typography>
-              <Box sx={{ height: 300, borderRadius: 2, overflow: 'hidden' }}>
-                <GoogleMap
-                  center={{ lat: parseFloat(formData.latitude) || defaultCenter.lat, lng: parseFloat(formData.longitude) || defaultCenter.lng }}
-                  zoom={defaultZoom}
-                  mapContainerStyle={{ height: "100%", width: "100%" }}
-                  onClick={(e) => {
-                    const lat = e.latLng.lat();
-                    const lng = e.latLng.lng();
-                    setFormData({ ...formData, latitude: lat, longitude: lng });
-                    setMarker({ lat, lng });
-                  }}
-                >
-                  {marker && <Marker position={marker} />}
-                </GoogleMap>
-              </Box>
-            </Box>
-          )}
+{isLoaded ? (
+  <Box mb={3}>
+    <Typography variant="subtitle2" color="text.secondary" mb={1}>
+      Search or click on the map to set location
+    </Typography>
+
+    {/* 🔍 Autocomplete Search Box */}
+    {/* <StandaloneSearchBox
+      onLoad={(ref) => (searchBoxRef.current = ref)}
+      onPlaceChanged={() => {
+        const place = searchBoxRef.current.getPlace();
+        if (place && place.geometry) {
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
+          setFormData({ ...formData, latitude: lat, longitude: lng });
+          setMarker({ lat, lng });
+        }
+      }}
+    >
+      <TextField
+        fullWidth
+        placeholder="Search for an address"
+        variant="outlined"
+        sx={{ mb: 2 }}
+      />
+    </StandaloneSearchBox> */}
+
+    {/* 🗺 Map */}
+    <Box sx={{ height: 300, borderRadius: 2, overflow: "hidden" }}>
+      <GoogleMap
+        center={{
+          lat: parseFloat(formData.latitude) || defaultCenter.lat,
+          lng: parseFloat(formData.longitude) || defaultCenter.lng,
+        }}
+        zoom={defaultZoom}
+        mapContainerStyle={{ height: "100%", width: "100%" }}
+        onClick={(e) => {
+          const lat = e.latLng.lat();
+          const lng = e.latLng.lng();
+          setFormData({ ...formData, latitude: lat, longitude: lng });
+          setMarker({ lat, lng });
+        }}
+      >
+        {marker && <Marker position={marker} />}
+      </GoogleMap>
+    </Box>
+  </Box>
+) : (
+  <Typography>Loading map...</Typography> // ⏳ fallback UI
+)}
+
+
+
+
+          {/* 📷 Image Upload Section */}
+<Box mb={3}>
+  <Typography variant="subtitle2" color="text.secondary" mb={1}>
+    Upload Image (optional)
+  </Typography>
+  <Button
+    variant="outlined"
+    component="label"
+    fullWidth
+    sx={{
+      borderColor: alpha(theme.palette.secondary.main, 0.5),
+      color: theme.palette.secondary.main,
+      '&:hover': {
+        borderColor: theme.palette.secondary.main,
+        backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+      },
+    }}
+  >
+    Choose File
+    <input
+      type="file"
+      accept="image/*"
+      hidden
+      onChange={(e) => {
+        const file = e.target.files[0];
+        if (file) {
+          setFormData({ ...formData, image: file });
+        }
+      }}
+    />
+  </Button>
+
+  {/* Show preview if selected */}
+  {formData.image && (
+    <Box mt={2}>
+      <img
+        src={URL.createObjectURL(formData.image)}
+        alt="Preview"
+        style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 8 }}
+      />
+    </Box>
+  )}
+</Box>
           <Box display="flex" gap={2}>
             <Button 
               variant="contained" 

@@ -32,7 +32,7 @@ import FlexBetween from "./FlexBetween";
 const navItems = [
   // { section: "Navigation" },
   { text: "Overview", text2: "overview", icon: <Dashboard /> },
-  { text: "Map", text2: "MapsAndTraffic", icon: <Map /> },
+  // { text: "Map", text2: "MapsAndTraffic", icon: <Map /> },
   { text: "Traffic Reports", text2: "reports", icon: <Traffic /> },
   { text: "Trips", text2: "TripAnalytics", icon: <Map /> },
   // { section: "Admin" },
@@ -42,6 +42,8 @@ const navItems = [
   
   { text: "Gas Stations", text2: "gasStations", icon: <LocalGasStation /> },
 
+
+  {text: "Log Out", icon: <SettingsOutlined /> },
 
   // { section: "System" },
   // { text: "Settings", text2: "Settings", icon: <SettingsOutlined /> },

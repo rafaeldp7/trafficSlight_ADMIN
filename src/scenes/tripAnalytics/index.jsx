@@ -145,7 +145,7 @@ const AdminTripsDashboard = () => {
         <Typography variant="h6" mb={2} color="text.primary" fontWeight="bold">Overall Stats</Typography>
         <Grid container spacing={3}>
           {stats.map((stat, idx) => (
-            <Grid item xs={12} sm={6} md={3} key={idx}>
+            <Grid item xs={12} sm={6} md={4} key={idx}>
               <Paper 
                 elevation={0} 
                 sx={{ 
