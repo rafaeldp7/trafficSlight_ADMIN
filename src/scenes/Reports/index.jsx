@@ -59,7 +59,7 @@ const ReportsDashboard = () => {
   const searchBoxRef = useRef(null);
   const { isLoaded } = useJsApiLoader({
   googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4", // or your key
-  libraries: ["places"], // 👈 REQUIRED for search box
+  libraries: ["maps"], // 👈 REQUIRED for search box
 });
   const zoomToLocation = (lat, lng) => {
     if (mapRef.current) {
@@ -308,14 +308,15 @@ const handleSubmit = async () => {
     <Box p="1.5rem 2.5rem" sx={{ backgroundColor: theme.palette.background.default }}>
       {/* Header Section */}
       <Box mb={4}>
-        <FlexBetween>
+  
           <Box>
-            <Header title="Reports Dashboard" />
+                <Header title="Reports Dashboard" subtitle="Monitor and manage traffic incidents and road conditions" />
+            {/* <Header title="Reports Dashboard" />
             <Typography variant="subtitle1" color="text.secondary" mt={1}>
               Monitor and manage traffic incidents and road conditions
-            </Typography>
+            </Typography> */}
           </Box>
-        </FlexBetween>
+
       </Box>
 
       {/* Overview Section */}

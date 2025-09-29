@@ -184,14 +184,7 @@ const AddMotor = () => {
     <Box p="1.5rem 2.5rem" sx={{ backgroundColor: theme.palette.background.default }}>
       {/* Header Section */}
       <Box mb={4}>
-        <FlexBetween>
-          <Box>
-            <Header title="Motorcycle Manager" />
-            <Typography variant="subtitle1" color="text.secondary" mt={1}>
-              Manage and track motorcycle specifications
-            </Typography>
-          </Box>
-        </FlexBetween>
+       <Header title="Motorcycle Manager" subtitle="Manage and track motorcycle specifications" />
       </Box>
 
       {/* Dashboard Summary */}

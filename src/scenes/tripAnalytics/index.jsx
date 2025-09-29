@@ -48,7 +48,7 @@ const AdminTripsDashboard = () => {
 
   useEffect(() => {
     fetchOverallStats();
-    fetchMonthlyStats();
+    // fetchMonthlyStats();
     fetchPaginatedTrips(page, rowsPerPage);
   }, [page, reload]);
 
@@ -68,35 +68,35 @@ const AdminTripsDashboard = () => {
     }
   };
 
-  const fetchMonthlyStats = async () => {
-    try {
-      const res = await axios.get(`${API}/analytics/monthy`);
-      const data = res.data;
-      setMonthlyStats([
-        { label: "Trips This Month", value: data.tripsThisMonth },
-        { label: "Monthly Distance", value: safeFixed(data.monthlyDistance) },
-        { label: "Monthly Fuel", value: safeFixed(data.monthlyFuel) },
-        { label: "Monthly Expense", value: safeFixed(data.monthlyExpense) },
-      ]);
-      setChartData({
-        labels: ["Trips", "Distance (km)", "Fuel (L)", "Expense (₱)"],
-        datasets: [
-          {
-            label: "Monthly Metrics",
-            data: [
-              data.tripsThisMonth,
-              data.monthlyDistance,
-              data.monthlyFuel,
-              data.monthlyExpense,
-            ],
-            backgroundColor: ["#2196f3", "#4caf50", "#ff9800", "#f44336"],
-          },
-        ],
-      });
-    } catch (err) {
-      console.error("Error fetching monthly stats:", err);
-    }
-  };
+  // const fetchMonthlyStats = async () => {
+  //   try {
+  //     const res = await axios.get(`${API}/analytics/monthy`);
+  //     const data = res.data;
+  //     setMonthlyStats([
+  //       { label: "Trips This Month", value: data.tripsThisMonth },
+  //       { label: "Monthly Distance", value: safeFixed(data.monthlyDistance) },
+  //       { label: "Monthly Fuel", value: safeFixed(data.monthlyFuel) },
+  //       { label: "Monthly Expense", value: safeFixed(data.monthlyExpense) },
+  //     ]);
+  //     setChartData({
+  //       labels: ["Trips", "Distance (km)", "Fuel (L)", "Expense (₱)"],
+  //       datasets: [
+  //         {
+  //           label: "Monthly Metrics",
+  //           data: [
+  //             data.tripsThisMonth,
+  //             data.monthlyDistance,
+  //             data.monthlyFuel,
+  //             data.monthlyExpense,
+  //           ],
+  //           backgroundColor: ["#2196f3", "#4caf50", "#ff9800", "#f44336"],
+  //         },
+  //       ],
+  //     });
+  //   } catch (err) {
+  //     console.error("Error fetching monthly stats:", err);
+  //   }
+  // };
 
   const fetchPaginatedTrips = async (page, limit) => {
   try {
@@ -141,8 +141,8 @@ const AdminTripsDashboard = () => {
     <Box p="1.5rem 2.5rem" sx={{ backgroundColor: theme.palette.background.default }} minHeight="100vh">
       <Header title="Trips Dashboard" subtitle="Analytics and trip records" />
 
-      <Box mb={4}>
-        <Typography variant="h6" mb={2} color="text.primary" fontWeight="bold">Overall Stats</Typography>
+      <Box mb={4} mt={5}>
+        {/* <Typography variant="h6" mb={2} color="text.primary" fontWeight="bold">Overall Stats</Typography> */}
         <Grid container spacing={3}>
           {stats.map((stat, idx) => (
             <Grid item xs={12} sm={6} md={4} key={idx}>

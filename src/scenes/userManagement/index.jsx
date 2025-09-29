@@ -159,9 +159,7 @@ const UserManagement = () => {
 
   return (
     <Box p="1.5rem 2.5rem" sx={{ backgroundColor: theme.palette.background.default }}>
-      <FlexBetween>
-        <Header title="User Management" />
-      </FlexBetween>
+<Header title="User Management" subtitle="Manage users"/>
 
       {/* Dashboard */}
       <Box mt="1.5rem" display="flex" gap="1.5rem" flexWrap="wrap">

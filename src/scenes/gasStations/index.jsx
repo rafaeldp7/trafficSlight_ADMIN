@@ -204,14 +204,7 @@ const getStats = () => {
   return (
     <Box p="1.5rem 2.5rem" sx={{ backgroundColor: theme.palette.background.default }}>
       <Box mb={4}>
-        <FlexBetween>
-          <Box>
-            <Header title="Gas Stations" />
-            <Typography variant="subtitle1" color="text.secondary" mt={1}>
-              Monitor and manage gas station locations and fuel prices
-            </Typography>
-          </Box>
-        </FlexBetween>
+        <Header title="Gas Stations" subtitle="Monitor and manage gas station locations and fuel prices" />
       </Box>
 
       <Box mb={4}>
