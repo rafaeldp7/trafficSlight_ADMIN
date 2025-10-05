@@ -43,7 +43,7 @@ const navItems = [
   { text: "Gas Stations", text2: "gasStations", icon: <LocalGasStation /> },
 
 
-  {text: "Log Out", icon: <SettingsOutlined /> },
+  // {text: "Log Out", icon: <SettingsOutlined /> },
 
   // { section: "System" },
   // { text: "Settings", text2: "Settings", icon: <SettingsOutlined /> },
