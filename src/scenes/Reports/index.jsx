@@ -183,6 +183,14 @@ const ReportsDashboard = () => {
 
   const handleSubmit = async () => {
     try {
+      if (
+        formData._id === null ||
+        formData._id === "null" ||
+        formData._id === undefined
+      ) {
+        console.warn("Invalid report ID. Cannot update report.");
+        return;
+      }
       // ✅ Validation
       if (!formData.reportType) {
         alert("Please select a report type.");
@@ -249,7 +257,6 @@ const ReportsDashboard = () => {
     }
   };
 
-
   const handleEdit = (row) => {
     setFormData({
       _id: row._id,
@@ -275,6 +282,14 @@ const ReportsDashboard = () => {
 
   const handleVerifybyAdmin = async () => {
     try {
+      if (
+        formData._id === null ||
+        formData._id === "null" ||
+        formData._id === undefined
+      ) {
+        console.warn("Invalid report ID. Cannot update report.");
+        return;
+      }
       const payload = {
         //ADD SA NEW DATABASE
         verified: {
