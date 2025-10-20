@@ -235,8 +235,12 @@ const ReportsDashboard = () => {
       alert("Something went wrong while submitting. Please try again.");
     }
   };
-
   const handleDelete = async (id) => {
+    if (!id || id === "null") {
+      console.warn("handleDelete called with invalid ID:", id);
+      return;
+    }
+
     try {
       await fetch(`${API_BASE}/${id}/archive`, { method: "PUT" });
       fetchReports();
@@ -244,6 +248,7 @@ const ReportsDashboard = () => {
       console.error("Delete error:", err);
     }
   };
+
 
   const handleEdit = (row) => {
     setFormData({
@@ -918,7 +923,13 @@ const ReportsDashboard = () => {
                       <Button
                         variant="contained"
                         size="small"
-                        onClick={() => handleDelete(selectedReport._id)}
+                        onClick={() => {
+                          if (selectedReport?._id) {
+                            handleDelete(selectedReport._id);
+                          } else {
+                            console.warn("Missing report ID, cannot delete");
+                          }
+                        }}
                       >
                         Resolved
                       </Button>
