@@ -39,6 +39,7 @@ import {
   Block,
   ReportProblem,
   Search,
+  Verified,
 } from "@mui/icons-material";
 import PlaceAutocompleteBox from "components/PlaceAutocompleteBox";
 Chart.register(...registerables);
@@ -325,6 +326,7 @@ const ReportsDashboard = () => {
   };
 
   const columns = [
+    { field: "_id", headerName: "Report ID", flex: 1.2 },
     { field: "reportType", headerName: "Type", flex: 1 },
     { field: "description", headerName: "Description", flex: 1 },
     {
@@ -332,6 +334,32 @@ const ReportsDashboard = () => {
       headerName: "Timestamp",
       flex: 1.2,
       valueGetter: (params) => new Date(params.value).toLocaleString(),
+    },
+    {
+      field: "verifiedByAdmin",
+      headerName: "Verified by Admin",
+      flex: 1,
+      renderCell: (params) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {params.row.verified?.verifiedByAdmin === 1 ? (
+            <>
+              <Verified 
+                sx={{ 
+                  color: theme.palette.success.main,
+                  fontSize: 18 
+                }} 
+              />
+              <Typography variant="body2" color="success.main">
+                Yes
+              </Typography>
+            </>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No
+            </Typography>
+          )}
+        </Box>
+      ),
     },
     {
       field: "votes",
@@ -378,6 +406,7 @@ const ReportsDashboard = () => {
     },
   ];
   const archivedColumns = [
+    { field: "_id", headerName: "Report ID", flex: 1.2 },
     { field: "reportType", headerName: "Type", flex: 1 },
     { field: "description", headerName: "Description", flex: 1 },
     {
@@ -385,6 +414,32 @@ const ReportsDashboard = () => {
       headerName: "Timestamp",
       flex: 1.2,
       valueGetter: (params) => new Date(params.value).toLocaleString(),
+    },
+    {
+      field: "verifiedByAdmin",
+      headerName: "Verified by Admin",
+      flex: 1,
+      renderCell: (params) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {params.row.verified?.verifiedByAdmin === 1 ? (
+            <>
+              <Verified 
+                sx={{ 
+                  color: theme.palette.success.main,
+                  fontSize: 18 
+                }} 
+              />
+              <Typography variant="body2" color="success.main">
+                Yes
+              </Typography>
+            </>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No
+            </Typography>
+          )}
+        </Box>
+      ),
     },
     {
       field: "votes",
@@ -886,9 +941,20 @@ const ReportsDashboard = () => {
                         alignItems: "center",
                       }}
                     >
-                      <Typography variant="subtitle1" fontWeight="bold">
-                        {selectedReport.reportType}
-                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Typography variant="subtitle1" fontWeight="bold">
+                          {selectedReport.reportType}
+                        </Typography>
+                        {selectedReport.verified?.verifiedByAdmin === 1 && (
+                          <Verified 
+                            sx={{ 
+                              color: theme.palette.success.main,
+                              fontSize: 20 
+                            }} 
+                            title="Verified by Admin"
+                          />
+                        )}
+                      </Box>
                       {/* custom close button */}
                       <Typography
                         sx={{
@@ -902,6 +968,9 @@ const ReportsDashboard = () => {
                       </Typography>
                     </Box>
 
+                    <Typography variant="body2" color="text.secondary">
+                      Report ID: {selectedReport._id || "N/A"}
+                    </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Time:{" "}
                       {selectedReport.timestamp
