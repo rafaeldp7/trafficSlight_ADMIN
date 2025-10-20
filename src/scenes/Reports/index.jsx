@@ -70,6 +70,7 @@ const ReportsDashboard = () => {
     latitude: "",
     longitude: "",
     address: "",
+    image: null,
   });
   const [marker, setMarker] = useState(null);
   const mapRef = useRef(null);
@@ -162,6 +163,22 @@ const ReportsDashboard = () => {
     setFiltered(filteredData);
   }, [searchText, typeFilter, reports]);
 
+  // Add filtering for archived reports
+  useEffect(() => {
+    let filteredArchivedData = [...allArchivedReports];
+    if (typeFilter !== "All") {
+      filteredArchivedData = filteredArchivedData.filter((r) => r.reportType === typeFilter);
+    }
+    if (searchText) {
+      filteredArchivedData = filteredArchivedData.filter((r) =>
+        `${r.description} ${r.reportType}`
+          .toLowerCase()
+          .includes(searchText.toLowerCase())
+      );
+    }
+    setArchivedFiltered(filteredArchivedData);
+  }, [searchText, typeFilter, allArchivedReports]);
+
   const processChart = (data) => {
     const typeCounts = data.reduce((acc, r) => {
       acc[r.reportType] = (acc[r.reportType] || 0) + 1;
@@ -183,11 +200,8 @@ const ReportsDashboard = () => {
 
   const handleSubmit = async () => {
     try {
-      if (
-        formData._id === null ||
-        formData._id === "null" ||
-        formData._id === undefined
-      ) {
+      // Only validate ID for updates, not for new reports
+      if (formData._id && (formData._id === "null" || formData._id === undefined)) {
         console.warn("Invalid report ID. Cannot update report.");
         return;
       }
@@ -276,36 +290,37 @@ const ReportsDashboard = () => {
       description: "",
       latitude: "",
       longitude: "",
+      address: "",
+      image: null,
     });
     setMarker(null);
   };
 
-  const handleVerifybyAdmin = async () => {
+  const handleVerifybyAdmin = async (reportId = null) => {
     try {
-      if (
-        formData._id === null ||
-        formData._id === "null" ||
-        formData._id === undefined
-      ) {
-        console.warn("Invalid report ID. Cannot update report.");
+      const idToUse = reportId || selectedReport?._id || formData._id;
+      
+      if (!idToUse || idToUse === "null" || idToUse === undefined) {
+        console.warn("Invalid report ID. Cannot verify report.");
         return;
       }
+      
       const payload = {
-        //ADD SA NEW DATABASE
         verified: {
           verifiedByAdmin: 1,
         },
       };
 
-      await fetch(`${API_BASE}/${formData._id}`, {
+      await fetch(`${API_BASE}/${idToUse}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       fetchReports();
+      setSelectedReport(null); // Close info box after verification
     } catch (err) {
-      console.error("Submit error:", err);
+      console.error("Verify error:", err);
     }
   };
 
@@ -389,7 +404,7 @@ const ReportsDashboard = () => {
       field: "archived",
       headerName: "Archived",
       flex: 1,
-      // valueGetter: (params) => `${params.value.archived || "N/A"}`,
+      valueGetter: (params) => params.value ? "Yes" : "No",
     },
     // {
     //   field: "actions",
@@ -595,7 +610,7 @@ const ReportsDashboard = () => {
                 >
                   <img
                     src="/assets/reportMarkers/traffic.png"
-                    alt="traffuc marker"
+                    alt="traffic marker"
                     height={"50%"}
                     width={50}
                   />
@@ -931,7 +946,7 @@ const ReportsDashboard = () => {
                       <Button
                         variant="contained"
                         size="small"
-                        onClick={() => handleVerifybyAdmin()}
+                        onClick={() => handleVerifybyAdmin(selectedReport._id)}
                       >
                         Verify
                       </Button>
@@ -1121,10 +1136,6 @@ const ReportsDashboard = () => {
             mb={3}
           >
             {formData._id ? "Edit Report" : "New Report"}
-
-            <Button variant="h5" color="text.primary" fontWeight="bold" mb={3}>
-              Verify
-            </Button>
           </Typography>
 
           <Divider sx={{ mb: 3 }} />
