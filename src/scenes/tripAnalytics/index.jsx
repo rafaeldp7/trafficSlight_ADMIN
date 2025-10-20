@@ -348,7 +348,24 @@ const AdminTripsDashboard = () => {
                 }}
               >
                 <TableCell>{new Date(trip.createdAt).toLocaleDateString()}</TableCell>
-                <TableCell>{dayjs(trip.timeArrived, "h:mm A").subtract(trip.duration || 0, "minute").format("h:mm A")} → {trip.timeArrived}</TableCell>
+                <TableCell>
+  {trip.timeArrived
+    ? dayjs(trip.timeArrived, "h:mm A")
+        .subtract(trip.duration || 0, "minute")
+        .format("h:mm A")
+    : trip.tripEndTime
+    ? dayjs(trip.tripEndTime)
+        .subtract(trip.duration || 0, "minute")
+        .format("h:mm A")
+    : trip.startTime || "--"}{" "}
+  →{" "}
+  {trip.timeArrived
+    ? trip.timeArrived
+    : trip.tripEndTime
+    ? dayjs(trip.tripEndTime).format("h:mm A")
+    : "--"}
+</TableCell>
+
                 <TableCell>{trip._id || "Unknown"}</TableCell>
                 <TableCell>
                   <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
