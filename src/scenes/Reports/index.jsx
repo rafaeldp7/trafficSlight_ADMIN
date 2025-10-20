@@ -15,32 +15,23 @@ import {
   useTheme,
   Divider,
   alpha,
-  Alert,
 } from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
 import { Bar, Pie } from "react-chartjs-2";
 import { Chart, registerables } from "chart.js";
 import Header from "components/Header";
-import FlexBetween from "components/FlexBetween";
 import {
   GoogleMap,
   Marker,
   useJsApiLoader,
-  InfoWindow,
   InfoBox,
-  StandaloneSearchBox,
 } from "@react-google-maps/api";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import {
-  Warning,
-  TrafficRounded,
-  Block,
-  ReportProblem,
   Search,
 } from "@mui/icons-material";
-import PlaceAutocompleteBox from "components/PlaceAutocompleteBox";
 Chart.register(...registerables);
 
 const API_BASE = "https://ts-backend-1-jyit.onrender.com/api/reports";
@@ -79,13 +70,11 @@ const ReportsDashboard = () => {
   const [allArchivedReports, setAllArchivedReports] = useState([]);
   const [archivedFiltered, setArchivedFiltered] = useState([]);
 
-  //For search box
-  const searchBoxRef = useRef(null);
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey:
       process.env.REACT_APP_GOOGLE_MAPS_API_KEY ||
       "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4", // or your key
-    libraries: ["maps"], // 👈 REQUIRED for search box
+    libraries: ["places"], // 👈 REQUIRED for search box
   });
   const zoomToLocation = (lat, lng) => {
     if (mapRef.current) {
@@ -109,15 +98,10 @@ const ReportsDashboard = () => {
     }
   };
 
-  // const { isLoaded } = useJsApiLoader({
-  //   googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4",
-  // });
-
   useEffect(() => {
     fetchReports();
     fetchArchivedReports();
   }, []);
-  console.log(reports);
 
   const fetchReports = async () => {
     try {
@@ -137,11 +121,8 @@ const ReportsDashboard = () => {
       const res = await fetch(`${API_BASE}`);
       let data = await res.json();
       data = data.filter((r) => r.archived === true);
-      // setReports(data);
       setAllArchivedReports(data);
-      // setAllReports(data);
       setArchivedFiltered(data);
-      // processChart(data);
     } catch (error) {
       console.error("Error fetching reports:", error);
     }
@@ -310,6 +291,7 @@ const ReportsDashboard = () => {
   };
 
   const columns = [
+    { field: "_id", headerName: "ID", flex: 1 },
     { field: "reportType", headerName: "Type", flex: 1 },
     { field: "description", headerName: "Description", flex: 1 },
     {
@@ -363,6 +345,7 @@ const ReportsDashboard = () => {
     },
   ];
   const archivedColumns = [
+    { field: "_id", headerName: "ID", flex: 1 },
     { field: "reportType", headerName: "Type", flex: 1 },
     { field: "description", headerName: "Description", flex: 1 },
     {
@@ -453,10 +436,7 @@ const ReportsDashboard = () => {
             title="Reports Dashboard"
             subtitle="Monitor and manage traffic incidents and road conditions"
           />
-          {/* <Header title="Reports Dashboard" />
-            <Typography variant="subtitle1" color="text.secondary" mt={1}>
-              Monitor and manage traffic incidents and road conditions
-            </Typography> */}
+          
         </Box>
       </Box>
 
@@ -823,7 +803,6 @@ const ReportsDashboard = () => {
                 <Marker
                   key={report._id}
                   onClick={() => {
-                    // zoomToLocation(report.location.latitude, report.location.longitude);
                     setSelectedReport(report);
                   }}
                   onDblClick={() =>
@@ -1121,10 +1100,6 @@ const ReportsDashboard = () => {
             mb={3}
           >
             {formData._id ? "Edit Report" : "New Report"}
-
-            <Button variant="h5" color="text.primary" fontWeight="bold" mb={3}>
-              Verify
-            </Button>
           </Typography>
 
           <Divider sx={{ mb: 3 }} />
@@ -1178,6 +1153,22 @@ const ReportsDashboard = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, latitude: e.target.value })
                 }
+                type="number"
+                inputProps={{ step: "any", min: -90, max: 90 }}
+                error={
+                  formData.latitude !== "" &&
+                  (Number.isNaN(Number(formData.latitude)) ||
+                    Number(formData.latitude) < -90 ||
+                    Number(formData.latitude) > 90)
+                }
+                helperText={
+                  formData.latitude !== "" &&
+                  (Number.isNaN(Number(formData.latitude)) ||
+                    Number(formData.latitude) < -90 ||
+                    Number(formData.latitude) > 90)
+                    ? "Latitude must be a number between -90 and 90."
+                    : ""
+                }
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     "&:hover fieldset": {
@@ -1195,6 +1186,22 @@ const ReportsDashboard = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, longitude: e.target.value })
                 }
+                type="number"
+                inputProps={{ step: "any", min: -180, max: 180 }}
+                error={
+                  formData.longitude !== "" &&
+                  (Number.isNaN(Number(formData.longitude)) ||
+                    Number(formData.longitude) < -180 ||
+                    Number(formData.longitude) > 180)
+                }
+                helperText={
+                  formData.longitude !== "" &&
+                  (Number.isNaN(Number(formData.longitude)) ||
+                    Number(formData.longitude) < -180 ||
+                    Number(formData.longitude) > 180)
+                    ? "Longitude must be a number between -180 and 180."
+                    : ""
+                }
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     "&:hover fieldset": {
@@ -1211,26 +1218,7 @@ const ReportsDashboard = () => {
                 Search or click on the map to set location
               </Typography>
 
-              {/* 🔍 Autocomplete Search Box */}
-              {/* <StandaloneSearchBox
-      onLoad={(ref) => (searchBoxRef.current = ref)}
-      onPlaceChanged={() => {
-        const place = searchBoxRef.current.getPlace();
-        if (place && place.geometry) {
-          const lat = place.geometry.location.lat();
-          const lng = place.geometry.location.lng();
-          setFormData({ ...formData, latitude: lat, longitude: lng });
-          setMarker({ lat, lng });
-        }
-      }}
-    >
-      <TextField
-        fullWidth
-        placeholder="Search for an address"
-        variant="outlined"
-        sx={{ mb: 2 }}
-      />
-    </StandaloneSearchBox> */}
+              
 
               {/* 🗺 Map */}
               <Box sx={{ height: 300, borderRadius: 2, overflow: "hidden" }}>
