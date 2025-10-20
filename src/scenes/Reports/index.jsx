@@ -297,33 +297,37 @@ const ReportsDashboard = () => {
     setMarker(null);
   };
 
-  const handleVerifybyAdmin = async (reportId = null) => {
-    try {
-      const idToUse = reportId || selectedReport?._id || formData._id;
-      
-      if (!idToUse || idToUse === "null" || idToUse === undefined) {
-        console.warn("Invalid report ID. Cannot verify report.");
-        return;
-      }
-      
-      const payload = {
-        verified: {
-          verifiedByAdmin: 1,
-        },
-      };
+const handleVerifybyAdmin = async (reportId = null) => {
+  try {
+    const idToUse = reportId || selectedReport?._id || formData._id;
 
-      await fetch(`${API_BASE}/${idToUse}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      fetchReports();
-      setSelectedReport(null); // Close info box after verification
-    } catch (err) {
-      console.error("Verify error:", err);
+    if (!idToUse) {
+      console.warn("Invalid report ID. Cannot verify report.");
+      return;
     }
-  };
+
+    const payload = { verifiedByAdmin: 1 };
+
+    const response = await fetch(`${API_BASE}/${idToUse}/verify`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Verification failed:", errorData);
+      return;
+    }
+
+    fetchReports();
+    setSelectedReport(null);
+  } catch (err) {
+    console.error("Verify error:", err);
+  }
+};
+
+
 
   const columns = [
     { field: "_id", headerName: "Report ID", flex: 1.2 },
