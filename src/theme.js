@@ -74,10 +74,12 @@ export const tokensDark = {
                 ...tokensDark.primary,
                 main: tokensDark.primary[400],
                 light: tokensDark.primary[400],
+                contrastText: tokensDark.grey[10],
               },
               secondary: {
                 ...tokensDark.secondary,
                 main: tokensDark.secondary[300],
+                contrastText: tokensDark.grey[0],
               },
               neutral: {
                 ...tokensDark.grey,
@@ -87,6 +89,11 @@ export const tokensDark = {
                 default: tokensDark.primary[600],
                 alt: tokensDark.primary[500],
               },
+              text: {
+                primary: tokensDark.grey[10],
+                secondary: tokensDark.grey[300],
+                disabled: tokensDark.grey[500],
+              },
             }
           : {
               // palette values for light mode
@@ -94,11 +101,13 @@ export const tokensDark = {
                 ...tokensLight.primary,
                 main: tokensDark.grey[50],
                 light: tokensDark.grey[100],
+                contrastText: tokensDark.primary[700],
               },
               secondary: {
                 ...tokensLight.secondary,
                 main: tokensDark.secondary[600],
                 light: tokensDark.secondary[700],
+                contrastText: tokensDark.grey[0],
               },
               neutral: {
                 ...tokensLight.grey,
@@ -108,9 +117,23 @@ export const tokensDark = {
                 default: tokensDark.grey[0],
                 alt: tokensDark.grey[50],
               },
+              text: {
+                primary: tokensDark.primary[900],
+                secondary: tokensDark.grey[700],
+                disabled: tokensDark.grey[400],
+              },
             }),
       },
       components: {
+        MuiCssBaseline: {
+          styleOverrides: {
+            body: {
+              backgroundColor:
+                mode === 'dark' ? tokensDark.primary[600] : tokensDark.grey[0],
+              color: mode === 'dark' ? tokensDark.grey[10] : tokensDark.primary[900],
+            },
+          },
+        },
         MuiTab: {
           styleOverrides: {
             root: {
@@ -122,6 +145,28 @@ export const tokensDark = {
               '&.Mui-selected': {
                 color: mode === 'dark' ? tokensDark.secondary[300] : tokensDark.secondary[600],
               },
+            },
+          },
+        },
+        MuiAppBar: {
+          styleOverrides: {
+            colorPrimary: {
+              backgroundColor: 'transparent',
+            },
+          },
+        },
+        MuiDrawer: {
+          styleOverrides: {
+            paper: {
+              backgroundColor:
+                mode === 'dark' ? tokensDark.primary[500] : tokensDark.grey[0],
+            },
+          },
+        },
+        MuiPaper: {
+          styleOverrides: {
+            root: {
+              backgroundImage: 'none',
             },
           },
         },

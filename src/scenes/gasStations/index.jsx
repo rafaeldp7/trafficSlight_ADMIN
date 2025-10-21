@@ -91,6 +91,7 @@ const GasStationsPage = () => {
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4",
+    libraries: ["places"],
   });
 
   const fetchStations = () => {

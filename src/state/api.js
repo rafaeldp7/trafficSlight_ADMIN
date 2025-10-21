@@ -1,7 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/dist/query/react";
 
+const BASE_URL = process.env.REACT_APP_BASE_URL || "https://ts-backend-1-jyit.onrender.com/api/";
+
 export const api = createApi({
-  baseQuery: fetchBaseQuery({ baseUrl: process.env.REACT_APP_BASE_URL }),
+  baseQuery: fetchBaseQuery({ baseUrl: BASE_URL }),
   reducerPath: "adminApi",
   tagTypes: [
     "User",
@@ -13,7 +15,11 @@ export const api = createApi({
     "Admins",
     "Performance",
     "Dashboard",
+    "Reports",
   ],
+  refetchOnFocus: true,
+  refetchOnReconnect: true,
+  keepUnusedDataFor: 30,
   endpoints: (build) => ({
     getUser: build.query({
       query: (id) => `general/user/${id}`,
@@ -55,6 +61,49 @@ export const api = createApi({
       query: () => "general/dashboard",
       providesTags: ["Dashboard"],
     }),
+    // Reports endpoints
+    getReports: build.query({
+      query: () => `reports`,
+      providesTags: (result) =>
+        result?.length
+          ? [
+              ...result.map((r) => ({ type: "Reports", id: r._id })),
+              { type: "Reports", id: "LIST" },
+            ]
+          : [{ type: "Reports", id: "LIST" }],
+    }),
+    getArchivedReports: build.query({
+      query: () => `reports`,
+      transformResponse: (data) => data?.filter((r) => r.archived === true) || [],
+      providesTags: [{ type: "Reports", id: "ARCHIVE_LIST" }],
+    }),
+    createReport: build.mutation({
+      query: (body) => ({ url: `reports`, method: "POST", body }),
+      invalidatesTags: [{ type: "Reports", id: "LIST" }, { type: "Reports", id: "ARCHIVE_LIST" }],
+    }),
+    updateReport: build.mutation({
+      query: ({ id, body }) => ({ url: `reports/${id}`, method: "PUT", body }),
+      invalidatesTags: (_r, _e, arg) => [
+        { type: "Reports", id: arg?.id },
+        { type: "Reports", id: "LIST" },
+        { type: "Reports", id: "ARCHIVE_LIST" },
+      ],
+    }),
+    archiveReport: build.mutation({
+      query: (id) => ({ url: `reports/${id}/archive`, method: "PUT" }),
+      invalidatesTags: [{ type: "Reports", id: "LIST" }, { type: "Reports", id: "ARCHIVE_LIST" }],
+    }),
+    verifyReportByAdmin: build.mutation({
+      query: ({ id, verifiedByAdmin = 1 }) => ({
+        url: `reports/${id}/verify`,
+        method: "PUT",
+        body: { verifiedByAdmin },
+      }),
+      invalidatesTags: (_r, _e, arg) => [
+        { type: "Reports", id: arg?.id },
+        { type: "Reports", id: "LIST" },
+      ],
+    }),
   }),
 });
 
@@ -68,4 +117,10 @@ export const {
   useGetAdminsQuery,
   useGetUserPerformanceQuery,
   useGetDashboardQuery,
+  useGetReportsQuery,
+  useGetArchivedReportsQuery,
+  useCreateReportMutation,
+  useUpdateReportMutation,
+  useArchiveReportMutation,
+  useVerifyReportByAdminMutation,
 } = api;

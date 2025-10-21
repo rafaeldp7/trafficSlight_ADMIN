@@ -69,9 +69,8 @@ const MapsAndTraffic = () => {
   const theme = useTheme();
   
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey:
-      process.env.REACT_APP_GOOGLE_MAPS_API_KEY ||
-      "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4",
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4",
+    libraries: ["places"],
   });
 
   const [reports, setReports] = useState([]);

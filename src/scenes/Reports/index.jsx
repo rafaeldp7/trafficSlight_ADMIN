@@ -24,6 +24,14 @@ import { Chart, registerables } from "chart.js";
 import Header from "components/Header";
 import FlexBetween from "components/FlexBetween";
 import {
+  useGetReportsQuery,
+  useGetArchivedReportsQuery,
+  useCreateReportMutation,
+  useUpdateReportMutation,
+  useArchiveReportMutation,
+  useVerifyReportByAdminMutation,
+} from "state/api";
+import {
   GoogleMap,
   Marker,
   useJsApiLoader,
@@ -44,7 +52,6 @@ import {
 import PlaceAutocompleteBox from "components/PlaceAutocompleteBox";
 Chart.register(...registerables);
 
-const API_BASE = "https://ts-backend-1-jyit.onrender.com/api/reports";
 const defaultCenter = { lat: 14.7006, lng: 120.9836 };
 const defaultZoom = 12;
 
@@ -57,9 +64,13 @@ const markerIcons = {
 
 const ReportsDashboard = () => {
   const theme = useTheme();
-  const [reports, setReports] = useState([]);
+  const { data: reportsData = [], isLoading, isError, refetch } = useGetReportsQuery(undefined, { pollingInterval: 10000 });
+  const { data: archivedData = [], isLoading: isLoadingArchived } = useGetArchivedReportsQuery(undefined, { pollingInterval: 10000 });
+  const [createReport] = useCreateReportMutation();
+  const [updateReport] = useUpdateReportMutation();
+  const [archiveReport] = useArchiveReportMutation();
+  const [verifyReportByAdmin] = useVerifyReportByAdminMutation();
   const [filtered, setFiltered] = useState([]);
-  const [allReports, setAllReports] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
   const [chartData, setChartData] = useState(null);
@@ -78,16 +89,13 @@ const ReportsDashboard = () => {
   const [selectedReport, setSelectedReport] = useState(null);
 
   //ARCHIVED REPORTS
-  const [allArchivedReports, setAllArchivedReports] = useState([]);
   const [archivedFiltered, setArchivedFiltered] = useState([]);
 
   //For search box
   const searchBoxRef = useRef(null);
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey:
-      process.env.REACT_APP_GOOGLE_MAPS_API_KEY ||
-      "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4", // or your key
-    libraries: ["maps"], // 👈 REQUIRED for search box
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4",
+    libraries: ["places"],
   });
   const zoomToLocation = (lat, lng) => {
     if (mapRef.current) {
@@ -116,41 +124,17 @@ const ReportsDashboard = () => {
   // });
 
   useEffect(() => {
-    fetchReports();
-    fetchArchivedReports();
-  }, []);
-  console.log(reports);
-
-  const fetchReports = async () => {
-    try {
-      const res = await fetch(`${API_BASE}`);
-      let data = await res.json();
-      data = data.filter((r) => r.archived !== true);
-      setReports(data);
-      setAllReports(data);
-      setFiltered(data);
-      processChart(data);
-    } catch (error) {
-      console.error("Error fetching reports:", error);
-    }
-  };
-  const fetchArchivedReports = async () => {
-    try {
-      const res = await fetch(`${API_BASE}`);
-      let data = await res.json();
-      data = data.filter((r) => r.archived === true);
-      // setReports(data);
-      setAllArchivedReports(data);
-      // setAllReports(data);
-      setArchivedFiltered(data);
-      // processChart(data);
-    } catch (error) {
-      console.error("Error fetching reports:", error);
-    }
-  };
+    const active = (reportsData || []).filter((r) => r && r.archived !== true);
+    setFiltered(active);
+    processChart(active);
+  }, [reportsData]);
 
   useEffect(() => {
-    let filteredData = [...reports];
+    setArchivedFiltered(archivedData || []);
+  }, [archivedData]);
+
+  useEffect(() => {
+    let filteredData = [...(reportsData || [])].filter((r) => r && r.archived !== true);
     if (typeFilter !== "All") {
       filteredData = filteredData.filter((r) => r.reportType === typeFilter);
     }
@@ -162,11 +146,11 @@ const ReportsDashboard = () => {
       );
     }
     setFiltered(filteredData);
-  }, [searchText, typeFilter, reports]);
+  }, [searchText, typeFilter, reportsData]);
 
   // Add filtering for archived reports
   useEffect(() => {
-    let filteredArchivedData = [...allArchivedReports];
+    let filteredArchivedData = [...(archivedData || [])];
     if (typeFilter !== "All") {
       filteredArchivedData = filteredArchivedData.filter((r) => r.reportType === typeFilter);
     }
@@ -178,7 +162,7 @@ const ReportsDashboard = () => {
       );
     }
     setArchivedFiltered(filteredArchivedData);
-  }, [searchText, typeFilter, allArchivedReports]);
+  }, [searchText, typeFilter, archivedData]);
 
   const processChart = (data) => {
     const typeCounts = data.reduce((acc, r) => {
@@ -236,23 +220,15 @@ const ReportsDashboard = () => {
 
       // ✅ Submit (Update or Create)
       if (formData._id) {
-        await fetch(`${API_BASE}/${formData._id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+        await updateReport({ id: formData._id, body: payload }).unwrap();
       } else {
-        await fetch(API_BASE, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+        await createReport(payload).unwrap();
       }
 
       // ✅ Close modal & refresh
       setModalOpen(false);
       resetForm();
-      fetchReports();
+      refetch();
     } catch (err) {
       console.error("Submit error:", err);
       alert("Something went wrong while submitting. Please try again.");
@@ -265,8 +241,8 @@ const ReportsDashboard = () => {
     }
 
     try {
-      await fetch(`${API_BASE}/${id}/archive`, { method: "PUT" });
-      fetchReports();
+      await archiveReport(id).unwrap();
+      refetch();
     } catch (err) {
       console.error("Delete error:", err);
     }
@@ -306,21 +282,8 @@ const handleVerifybyAdmin = async (reportId = null) => {
       return;
     }
 
-    const payload = { verifiedByAdmin: 1 };
-
-    const response = await fetch(`${API_BASE}/${idToUse}/verify`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Verification failed:", errorData);
-      return;
-    }
-
-    fetchReports();
+    await verifyReportByAdmin({ id: idToUse, verifiedByAdmin: 1 }).unwrap();
+    refetch();
     setSelectedReport(null);
   } catch (err) {
     console.error("Verify error:", err);
@@ -507,7 +470,7 @@ const handleVerifybyAdmin = async (reportId = null) => {
       "Road Closure": 0,
       Hazard: 0,
     };
-    reports.forEach((report) => {
+    (reportsData || []).forEach((report) => {
       if (stats.hasOwnProperty(report.reportType)) {
         stats[report.reportType]++;
       }
@@ -893,7 +856,7 @@ const handleVerifybyAdmin = async (reportId = null) => {
               zoom={12}
               onLoad={(map) => (mapRef.current = map)}
             >
-              {allReports.map((report) => (
+              {(reportsData || []).filter((r) => r && r.archived !== true).map((report) => (
                 <Marker
                   key={report._id}
                   onClick={() => {
@@ -902,26 +865,28 @@ const handleVerifybyAdmin = async (reportId = null) => {
                   }}
                   onDblClick={() =>
                     zoomToLocation(
-                      report.location.latitude,
-                      report.location.longitude
+                      report?.location?.latitude,
+                      report?.location?.longitude
                     )
                   }
                   position={{
-                    lat: report.location.latitude,
-                    lng: report.location.longitude,
+                    lat: report?.location?.latitude,
+                    lng: report?.location?.longitude,
                   }}
                   title={`${report.reportType} - ${report.description}`}
-                  icon={{
-                    url: markerIcons[report.reportType] || undefined,
-                    scaledSize: new window.google.maps.Size(64, 64),
-                  }}
+                  icon={(() => {
+                    const url = markerIcons[report.reportType] || undefined;
+                    const hasGoogle = typeof window !== 'undefined' && window.google && window.google.maps;
+                    const size = hasGoogle ? new window.google.maps.Size(64, 64) : undefined;
+                    return url ? { url, scaledSize: size } : undefined;
+                  })()}
                 />
               ))}
               {selectedReport && (
                 <InfoBox
                   position={{
-                    lat: selectedReport.location.latitude,
-                    lng: selectedReport.location.longitude,
+                    lat: selectedReport?.location?.latitude,
+                    lng: selectedReport?.location?.longitude,
                   }}
                   options={{
                     closeBoxURL: "", // para walang default X
@@ -935,7 +900,8 @@ const handleVerifybyAdmin = async (reportId = null) => {
                       minWidth: 200,
                       borderRadius: 2,
                       boxShadow: 3,
-                      backgroundColor: "white",
+                      backgroundColor: theme.palette.background.paper,
+                      color: theme.palette.text.primary,
                     }}
                   >
                     <Box

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Box, useMediaQuery } from "@mui/material";
+import React, { useEffect, useMemo, useState } from "react";
+import { Box, Chip, Fade, Tooltip, useMediaQuery, useTheme } from "@mui/material";
 import { Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Navbar from "components/Navbar";
@@ -11,6 +11,19 @@ const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const userId = useSelector((state) => state.global.userId);
   const { data } = useGetUserQuery(userId);
+  const theme = useTheme();
+
+  // Auto-refresh indicator (matches 10s interval defined globally)
+  const intervalMs = 10000;
+  const [remainingMs, setRemainingMs] = useState(intervalMs);
+
+  useEffect(() => {
+    const tick = () => setRemainingMs((prev) => (prev <= 1000 ? intervalMs : prev - 1000));
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const remainingSeconds = Math.ceil(remainingMs / 1000);
 
   return (
     <Box display={isNonMobile ? "flex" : "block"} width="100%" height="100%">
@@ -27,6 +40,7 @@ const Layout = () => {
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
         />
+        {/* Indicator now moved to Navbar */}
         <Outlet />
       </Box>
     </Box>

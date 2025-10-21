@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   LightModeOutlined,
   DarkModeOutlined,
@@ -22,6 +22,9 @@ import {
   Menu,
   MenuItem,
   useTheme,
+  Chip,
+  Tooltip,
+  Fade,
 } from "@mui/material";
 
 const Navbar = ({ user, isSidebarOpen, setIsSidebarOpen }) => {
@@ -32,6 +35,17 @@ const Navbar = ({ user, isSidebarOpen, setIsSidebarOpen }) => {
   const isOpen = Boolean(anchorEl);
   const handleClick = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
+
+  // Auto-refresh indicator countdown (10s)
+  const intervalMs = 10000;
+  const [remainingMs, setRemainingMs] = useState(intervalMs);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setRemainingMs((prev) => (prev <= 1000 ? intervalMs : prev - 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+  const remainingSeconds = Math.ceil(remainingMs / 1000);
 
   return (
     <AppBar
@@ -62,6 +76,20 @@ const Navbar = ({ user, isSidebarOpen, setIsSidebarOpen }) => {
 
         {/* RIGHT SIDE */}
         <FlexBetween gap="1.5rem">
+          <Tooltip title="Data auto-refreshes every 10 seconds">
+            <Fade in timeout={300}>
+              <Chip
+                label={`Refresh in ${remainingSeconds}s`}
+                color="secondary"
+                size="small"
+                sx={{
+                  fontWeight: 600,
+                  backgroundColor: theme.palette.mode === 'dark' ? theme.palette.secondary.main : theme.palette.secondary.light,
+                  color: theme.palette.secondary.contrastText,
+                }}
+              />
+            </Fade>
+          </Tooltip>
           <IconButton onClick={() => dispatch(setMode())}>
             {theme.palette.mode === "dark" ? (
               <DarkModeOutlined sx={{ fontSize: "25px" }} />

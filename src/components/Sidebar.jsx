@@ -143,29 +143,31 @@ const Sidebar = ({
                           : "4px solid transparent",
                         backgroundColor:
                           active === text2
-                            ? theme.palette.secondary[300]
+                            ? (theme.palette.mode === "dark"
+                                ? theme.palette.primary[600]
+                                : theme.palette.secondary[100])
                             : "transparent",
                         color:
                           active === text2
-                            ? theme.palette.mode === "dark"
-                              ? theme.palette.primary[600]
-                              : "#ffffff"
-                            : theme.palette.secondary[100],
+                            ? (theme.palette.mode === "dark"
+                                ? theme.palette.secondary.contrastText
+                                : theme.palette.primary[900])
+                            : theme.palette.text.primary,
                         borderRadius: 0,
                         pl: "1rem",
                         transition: "all 0.2s",
                         "&:hover": {
                           backgroundColor: active === text2
-                            ? theme.palette.mode === "dark"
-                              ? theme.palette.secondary[200]  // Brighter teal for dark mode active
-                              : theme.palette.secondary[500]  // Deeper teal for light mode active
-                            : theme.palette.mode === "dark"
-                              ? `rgba(${theme.palette.secondary[300]}, 0.2)`  // Semi-transparent teal for dark mode
-                              : theme.palette.secondary[100],  // Light teal for light mode
+                            ? (theme.palette.mode === "dark"
+                                ? theme.palette.primary[500]
+                                : theme.palette.secondary[200])
+                            : (theme.palette.mode === "dark"
+                                ? theme.palette.primary[500]
+                                : theme.palette.grey[50]),
                           borderLeft: `4px solid ${
                             active === text2
                               ? theme.palette.primary[600]
-                              : theme.palette.secondary[300]
+                              : theme.palette.secondary[600]
                           }`,
                         },
                       }}
@@ -175,20 +177,20 @@ const Sidebar = ({
                           ml: "1rem",
                           color:
                             active === text2
-                              ? theme.palette.mode === "dark"
-                                ? theme.palette.primary[600]
-                                : "#ffffff"
-                              : theme.palette.secondary[200],
+                              ? (theme.palette.mode === "dark"
+                                  ? theme.palette.secondary.contrastText
+                                  : theme.palette.primary[900])
+                              : theme.palette.text.secondary,
                           transition: "color 0.2s",
                           ".MuiListItemButton-root:hover &": {
                             color:
                               active === text2
-                                ? theme.palette.mode === "dark"
-                                  ? theme.palette.primary[600]
-                                  : "#ffffff"
-                                : theme.palette.mode === "dark"
-                                  ? theme.palette.secondary[100]
-                                  : theme.palette.secondary[500]
+                                ? (theme.palette.mode === "dark"
+                                    ? theme.palette.secondary.contrastText
+                                    : theme.palette.primary[900])
+                                : (theme.palette.mode === "dark"
+                                    ? theme.palette.text.primary
+                                    : theme.palette.secondary[600])
                           }
                         }}
                       >
@@ -203,12 +205,12 @@ const Sidebar = ({
                           ".MuiListItemButton-root:hover &": {
                             color:
                               active === text2
-                                ? theme.palette.mode === "dark"
-                                  ? theme.palette.primary[600]
-                                  : "#ffffff"
-                                : theme.palette.mode === "dark"
-                                  ? theme.palette.secondary[100]
-                                  : theme.palette.secondary[500]
+                                ? (theme.palette.mode === "dark"
+                                    ? theme.palette.secondary.contrastText
+                                    : theme.palette.primary[900])
+                                : (theme.palette.mode === "dark"
+                                    ? theme.palette.text.primary
+                                    : theme.palette.secondary[600])
                           }
                         }}
                       />
@@ -217,8 +219,8 @@ const Sidebar = ({
                           sx={{ 
                             ml: "auto",
                             color: theme.palette.mode === "dark"
-                              ? theme.palette.primary[600]
-                              : "#ffffff",
+                              ? theme.palette.secondary.contrastText
+                              : theme.palette.primary[900],
                             transition: "color 0.2s"
                           }} 
                         />
