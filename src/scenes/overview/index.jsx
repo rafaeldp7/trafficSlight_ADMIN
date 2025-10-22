@@ -4,6 +4,7 @@ import Header from "components/Header";
 import { Box, Typography, useMediaQuery } from "@mui/material";
 import { Line } from "react-chartjs-2";
 import StatBox from "components/StatBox";
+import { useGetReportsQuery } from "state/api";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -39,6 +40,7 @@ const Overview = () => {
   const [totalTrips, setTotalTrips] = useState(0);
   const [totalMotors, setTotalMotors] = useState(0);
   const [totalReports, setTotalReports] = useState(0);
+  const [activeReports, setActiveReports] = useState(0);
   const [totalMotorcycles, setTotalMotorcycles] = useState(0);
   const [totalFuelLogs, setTotalFuelLogs] = useState(0);
 
@@ -70,6 +72,15 @@ const Overview = () => {
       .catch((err) => console.error("Error fetching user growth:", err));
   }, []);
 
+  // Get real-time reports data using RTK Query (same as Reports scene)
+  const { data: reportsData = [] } = useGetReportsQuery(undefined, { pollingInterval: 10000 });
+
+  // Calculate active reports (non-archived) in real-time
+  useEffect(() => {
+    const active = (reportsData || []).filter((r) => r && r.archived !== true);
+    setActiveReports(active.length);
+  }, [reportsData]);
+
   return (
     <Box m="1.5rem 2.5rem">
       <FlexBetween>
@@ -91,7 +102,7 @@ const Overview = () => {
         <StatBox title="Total Motors Registered" value={totalMotors} />
         
         <StatBox title="New Users This Month" value={newUsersThisMonth} />
-        <StatBox title="Active Reports" value={totalReports} />
+        <StatBox title="Active Reports" value={activeReports} />
         <StatBox title="Motorcycle Models" value={totalMotorcycles} />
         {/* <StatBox title="First Rider" value={topUser ?? "N/A"} /> */}
       </Box>
