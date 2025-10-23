@@ -141,7 +141,9 @@ class AdminSettingsService {
   async getAdminNotifications() {
     try {
       const response = await fetch(`${this.baseURL}/admin-settings/notifications`, {
-        headers: this.getAuthHeaders()
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
       if (!response.ok) {
@@ -163,7 +165,9 @@ class AdminSettingsService {
     try {
       const response = await fetch(`${this.baseURL}/admin-settings/notifications/${notificationId}/read`, {
         method: 'PUT',
-        headers: this.getAuthHeaders()
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
       if (!response.ok) {

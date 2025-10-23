@@ -6,11 +6,9 @@ class ApiService {
 
   // Generic API call method with error handling
   async request(endpoint, options = {}) {
-    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
     const config = {
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
         ...options.headers
       },
       ...options

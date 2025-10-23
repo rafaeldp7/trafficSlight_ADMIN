@@ -60,7 +60,7 @@ const AdminLogs = () => {
       
       const response = await fetch(`https://ts-backend-1-jyit.onrender.com/api/admin-management/admin-logs?${params}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Content-Type': 'application/json'
         }
       });
       
@@ -84,7 +84,7 @@ const AdminLogs = () => {
     try {
       const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/admin-logs/stats', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Content-Type': 'application/json'
         }
       });
       

@@ -99,7 +99,7 @@ const AdminDashboard = () => {
     try {
       const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-settings/dashboard-stats', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Content-Type': 'application/json'
         }
       });
       
@@ -122,7 +122,7 @@ const AdminDashboard = () => {
     try {
       const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/admins', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Content-Type': 'application/json'
         }
       });
       
@@ -143,7 +143,7 @@ const AdminDashboard = () => {
     try {
       const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/admin-roles', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Content-Type': 'application/json'
         }
       });
       
@@ -164,7 +164,7 @@ const AdminDashboard = () => {
     try {
       const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/admin-logs', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Content-Type': 'application/json'
         }
       });
       
@@ -185,7 +185,7 @@ const AdminDashboard = () => {
     try {
       const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-settings/notifications', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Content-Type': 'application/json'
         }
       });
       
@@ -218,7 +218,7 @@ const AdminDashboard = () => {
       const response = await fetch(`https://ts-backend-1-jyit.onrender.com/api/admin-settings/export-data?format=${format}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Content-Type': 'application/json'
         }
       });
       

@@ -181,7 +181,8 @@ const LoginForm = () => {
         role: accountFormData.role
       };
       
-      // Use real backend service
+      // No authentication required - use regular admin creation
+      console.log('👤 ADMIN ACCOUNT - Creating Admin (No Auth Required)');
       const response = await adminService.createAdmin(adminData);
       
       if (response.success) {
@@ -210,11 +211,27 @@ const LoginForm = () => {
       }
       
     } catch (err) {
-      console.log('❌ ADMIN ACCOUNT - Creation Failed:', {
-        error: err.message,
+      console.error('❌ ADMIN ACCOUNT - Creation Error Details:', {
+        error: err,
+        message: err.message,
+        stack: err.stack,
         timestamp: new Date().toISOString()
       });
-      setAccountError("Failed to create admin account. Please try again.");
+      
+      // More specific error handling
+      if (err.message.includes('401')) {
+        setAccountError("Authentication failed. Please log in again.");
+      } else if (err.message.includes('400')) {
+        setAccountError("Invalid data provided. Please check all fields.");
+      } else if (err.message.includes('409')) {
+        setAccountError("An admin with this email already exists.");
+      } else if (err.message.includes('500')) {
+        setAccountError("Server error. Please try again later.");
+      } else if (err.message.includes('NetworkError') || err.message.includes('fetch')) {
+        setAccountError("Network error. Please check your connection and try again.");
+      } else {
+        setAccountError(`Account creation failed: ${err.message}`);
+      }
     } finally {
       setIsCreatingAccount(false);
     }
@@ -516,7 +533,7 @@ const LoginForm = () => {
             </Alert>
           )}
 
-          <Box component="form" onSubmit={handleCreateAccount}>
+          <Box component="form" onSubmit={(e) => { e.preventDefault(); handleCreateAccount(e); }}>
             <Box display="flex" gap={2} mb={2}>
               <TextField
                 fullWidth
@@ -605,6 +622,18 @@ const LoginForm = () => {
             startIcon={isCreatingAccount ? <CircularProgress size={20} /> : <PersonAdd />}
           >
             {isCreatingAccount ? "Creating..." : "Create Account"}
+          </Button>
+          <Button
+            onClick={() => {
+              console.log('🔍 DEBUG - Current Form Data:', accountFormData);
+              console.log('🔍 DEBUG - No Authentication Required');
+              console.log('🔍 DEBUG - Using Regular Admin Creation Endpoint');
+            }}
+            variant="outlined"
+            size="small"
+            sx={{ ml: 1 }}
+          >
+            Debug
           </Button>
         </DialogActions>
       </Dialog>

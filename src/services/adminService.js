@@ -39,6 +39,7 @@ export const adminService = {
     }
   },
 
+
   // Update admin
   async updateAdmin(id, adminData) {
     try {
@@ -251,7 +252,7 @@ export const adminService = {
       
       const response = await fetch(`${apiService.baseURL}/admin-management/export?${params}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken') || localStorage.getItem('token')}`
+          'Content-Type': 'application/json'
         }
       });
       

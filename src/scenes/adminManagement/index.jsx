@@ -69,7 +69,7 @@ const AdminManagement = () => {
       try {
         const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/admins', {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            'Content-Type': 'application/json'
           }
         });
         
@@ -101,7 +101,7 @@ const AdminManagement = () => {
       try {
         const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/admin-roles', {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            'Content-Type': 'application/json'
           }
         });
         
@@ -132,8 +132,7 @@ const AdminManagement = () => {
         const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/admins', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify(formData)
         });
@@ -165,8 +164,7 @@ const AdminManagement = () => {
         const response = await fetch(`https://ts-backend-1-jyit.onrender.com/api/admin-management/admins/${adminId}/role`, {
           method: 'PUT',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ roleId: newRoleId })
         });
