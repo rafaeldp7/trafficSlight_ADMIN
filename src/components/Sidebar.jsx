@@ -24,6 +24,9 @@ import {
   LocalGasStation,
   Traffic,
   Report,
+  AdminPanelSettings,
+  History,
+  Dashboard as DashboardIcon,
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import FlexBetween from "./FlexBetween";
@@ -33,7 +36,7 @@ const navItems = [
   // { section: "Navigation" },
   { text: "Overview", text2: "overview", icon: <Dashboard /> },
   // { text: "Map", text2: "MapsAndTraffic", icon: <Map /> },
-  { text: "Traffic Reports", text2: "reports", icon: <Traffic /> },
+  { text: "Traffic Reports", text2: "Reports", icon: <Traffic /> },
   { text: "Trips", text2: "TripAnalytics", icon: <Map /> },
   // { section: "Admin" },
   { text: "User Management", text2: "UserManagement", icon: <People /> },
@@ -42,6 +45,10 @@ const navItems = [
   
   { text: "Gas Stations", text2: "gasStations", icon: <LocalGasStation /> },
 
+  // { section: "System Administration" },
+  { text: "Admin Dashboard", text2: "adminDashboard", icon: <DashboardIcon /> },
+  { text: "Admin Management", text2: "adminManagement", icon: <AdminPanelSettings /> },
+  { text: "Admin Logs", text2: "adminLogs", icon: <History /> },
 
   // {text: "Log Out", icon: <SettingsOutlined /> },
 
@@ -134,7 +141,7 @@ const Sidebar = ({
                   <ListItem key={text2} disablePadding>
                     <ListItemButton
                       onClick={() => {
-                        navigate(`/${text2}`);
+                        navigate(text2);
                         setActive(text2);
                       }}
                       sx={{

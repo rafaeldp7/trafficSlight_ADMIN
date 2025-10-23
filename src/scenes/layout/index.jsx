@@ -4,13 +4,11 @@ import { Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Navbar from "components/Navbar";
 import Sidebar from "components/Sidebar";
-import { useGetUserQuery } from "state/api";
 
 const Layout = () => {
   const isNonMobile = useMediaQuery("(min-width: 600px)");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const userId = useSelector((state) => state.global.userId);
-  const { data } = useGetUserQuery(userId);
+  const user = useSelector((state) => state.global.user);
   const theme = useTheme();
 
   // Auto-refresh indicator (matches 10s interval defined globally)
@@ -28,7 +26,7 @@ const Layout = () => {
   return (
     <Box display={isNonMobile ? "flex" : "block"} width="100%" height="100%">
       <Sidebar
-        user={data || {}}
+        user={user || {}}
         isNonMobile={isNonMobile}
         drawerWidth="250px"
         isSidebarOpen={isSidebarOpen}
@@ -36,7 +34,7 @@ const Layout = () => {
       />
       <Box flexGrow={1}>
         <Navbar
-          user={data || {}}
+          user={user || {}}
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
         />
