@@ -44,18 +44,8 @@ const adminLogSchema = new mongoose.Schema({
     trim: true
   },
   details: {
-    before: {
-      type: mongoose.Schema.Types.Mixed,
-      default: null
-    },
-    after: {
-      type: mongoose.Schema.Types.Mixed,
-      default: null
-    },
-    description: {
-      type: String,
-      trim: true
-    }
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
   },
   ipAddress: {
     type: String,

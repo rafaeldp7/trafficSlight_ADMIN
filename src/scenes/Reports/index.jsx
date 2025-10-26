@@ -431,20 +431,39 @@ const handleVerifybyAdmin = async (reportId = null) => {
       renderCell: (params) => (
         <Box>
           {canUpdate && (
-            <IconButton color="error" onClick={() => handleEdit(params.row)}>
+            <IconButton 
+              onClick={() => handleEdit(params.row)}
+              sx={{
+                color: theme.palette.mode === 'dark' 
+                  ? theme.palette.primary.main 
+                  : theme.palette.primary.dark,
+                '&:hover': {
+                  backgroundColor: alpha(
+                    theme.palette.mode === 'dark' 
+                      ? theme.palette.primary.main 
+                      : theme.palette.primary.dark,
+                    0.1
+                  )
+                }
+              }}
+            >
               <EditIcon />
             </IconButton>
           )}
           {canDelete && (
             <IconButton
-              color="error"
               onClick={() => handleDelete(params.row._id)}
+              sx={{
+                color: theme.palette.error.main,
+                '&:hover': {
+                  backgroundColor: alpha(theme.palette.error.main, 0.1)
+                }
+              }}
             >
               <DeleteIcon />
             </IconButton>
           )}
           <IconButton
-            color="secondary"
             onClick={() =>
               zoomToLocation(
                 params.row.location.latitude,
@@ -452,6 +471,19 @@ const handleVerifybyAdmin = async (reportId = null) => {
               )
             }
             title="Zoom to Report"
+            sx={{
+              color: theme.palette.mode === 'dark' 
+                ? theme.palette.secondary.main 
+                : theme.palette.secondary.dark,
+              '&:hover': {
+                backgroundColor: alpha(
+                  theme.palette.mode === 'dark' 
+                    ? theme.palette.secondary.main 
+                    : theme.palette.secondary.dark,
+                  0.1
+                )
+              }
+            }}
           >
             📍
           </IconButton>
@@ -1082,20 +1114,6 @@ const handleVerifybyAdmin = async (reportId = null) => {
                   >
                     <TrafficLayer />
                     
-                    {/* Test Marker - Always show this to verify map is working */}
-                    <Marker
-                      position={{ lat: 14.7006, lng: 120.9836 }}
-                      title="Test Marker - Map is working"
-                      onClick={() => console.log("✅ Test marker clicked - map is working!")}
-                    />
-                    
-                    {/* Simple Test Marker with default icon */}
-                    <Marker
-                      position={{ lat: 14.7006, lng: 120.9846 }}
-                      title="Simple Test Marker"
-                      onClick={() => console.log("✅ Simple test marker clicked!")}
-                    />
-                    
                     {/* Render markers using Gas Stations pattern */}
                     {(reportsData || []).filter((r) => r && r.archived !== true).map((report) => (
                       <Marker
@@ -1484,20 +1502,6 @@ const handleVerifybyAdmin = async (reportId = null) => {
                 >
                   {/* Traffic Layer */}
                   <TrafficLayer />
-                  
-                  {/* Test Marker - Always show this to verify map is working */}
-                  <Marker
-                    position={{ lat: 14.7006, lng: 120.9836 }}
-                    title="Test Marker - Map is working"
-                    onClick={() => console.log("✅ Test marker clicked - map is working!")}
-                  />
-                  
-                  {/* Simple Test Marker with default icon */}
-                  <Marker
-                    position={{ lat: 14.7006, lng: 120.9846 }}
-                    title="Simple Test Marker"
-                    onClick={() => console.log("✅ Simple test marker clicked!")}
-                  />
                   
                   {/* Render markers using Gas Stations pattern - updates every 10 seconds */}
                   {markersData.map((report) => (

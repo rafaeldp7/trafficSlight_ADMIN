@@ -53,18 +53,76 @@ const Navbar = ({ user, isSidebarOpen, setIsSidebarOpen }) => {
     console.warn('AdminAuthProvider not available in Navbar, using fallback values');
   }
 
+  // Helper function to get admin display name
+  const getAdminName = () => {
+    if (admin?.firstName && admin?.lastName) {
+      return `${admin.firstName} ${admin.lastName}`;
+    }
+    if (admin?.firstName) {
+      return admin.firstName;
+    }
+    if (admin?.name) {
+      return admin.name;
+    }
+    return currentUser?.name || "Admin";
+  };
+
+  // Helper function to get role display name
+  const getRoleDisplayName = () => {
+    if (!admin?.role) return "Admin";
+    
+    // Handle role as string (simple role like 'super_admin')
+    if (typeof admin.role === 'string') {
+      const roleMap = {
+        'super_admin': 'Super Admin',
+        'admin': 'Admin',
+        'moderator': 'Moderator'
+      };
+      return roleMap[admin.role] || admin.role;
+    }
+    
+    // Handle role as object with displayName or name
+    if (typeof admin.role === 'object') {
+      return admin.role.displayName || admin.role.name || 'Admin';
+    }
+    
+    return 'Admin';
+  };
+
+  // Helper function to get role name for chip color
+  const getRoleName = () => {
+    if (!admin?.role) return 'admin';
+    
+    // Handle role as string
+    if (typeof admin.role === 'string') {
+      return admin.role;
+    }
+    
+    // Handle role as object
+    if (typeof admin.role === 'object') {
+      return admin.role.name || 'admin';
+    }
+    
+    return 'admin';
+  };
+
   const [anchorEl, setAnchorEl] = useState(null);
   const isOpen = Boolean(anchorEl);
   const handleClick = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (isAuthenticated && admin) {
-      logout();
+      await logout();
     } else {
       dispatch(setLogout());
     }
     handleClose();
+    
+    // Refresh page to go back to login
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 100);
   };
 
   // Manual refresh function
@@ -175,7 +233,7 @@ const Navbar = ({ user, isSidebarOpen, setIsSidebarOpen }) => {
                 fontWeight: 600,
               }}
             >
-              {admin?.firstName?.charAt(0) || admin?.name?.charAt(0) || "A"}
+              {admin?.firstName?.charAt(0).toUpperCase() || admin?.name?.charAt(0).toUpperCase() || "A"}
             </Avatar>
             <Button
               onClick={handleClick}
@@ -192,26 +250,22 @@ const Navbar = ({ user, isSidebarOpen, setIsSidebarOpen }) => {
             >
               <Box display="flex" flexDirection="column" alignItems="flex-start">
                 <Typography variant="body2" fontWeight="medium">
-                  {admin?.firstName && admin?.lastName 
-                    ? `${admin.firstName} ${admin.lastName}` 
-                    : admin?.name || currentUser?.name || "Admin"}
+                  {getAdminName()}
                 </Typography>
-                {admin?.role && (
-                  <Chip
-                    label={admin.role.displayName || admin.role.name || "Admin"}
-                    size="small"
-                    color={
-                      admin.role.name === 'super_admin' ? 'error' :
-                      admin.role.name === 'admin' ? 'primary' :
-                      admin.role.name === 'viewer' ? 'default' : 'secondary'
-                    }
-                    sx={{ 
-                      height: 16, 
-                      fontSize: '0.7rem',
-                      '& .MuiChip-label': { px: 1 }
-                    }}
-                  />
-                )}
+                <Chip
+                  label={getRoleDisplayName()}
+                  size="small"
+                  color={
+                    getRoleName() === 'super_admin' ? 'error' :
+                    getRoleName() === 'admin' ? 'primary' :
+                    getRoleName() === 'moderator' ? 'default' : 'secondary'
+                  }
+                  sx={{ 
+                    height: 16, 
+                    fontSize: '0.7rem',
+                    '& .MuiChip-label': { px: 1 }
+                  }}
+                />
               </Box>
               <ArrowDropDownOutlined sx={{ fontSize: "16px" }} />
             </Button>
@@ -228,16 +282,14 @@ const Navbar = ({ user, isSidebarOpen, setIsSidebarOpen }) => {
                   <Typography variant="body2">Profile</Typography>
                 </Box>
               </MenuItem>
-              {admin?.role && (
-                <MenuItem onClick={handleClose}>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <Security sx={{ fontSize: 16 }} />
-                    <Typography variant="body2">
-                      Role: {admin.role.displayName || admin.role.name}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              )}
+              <MenuItem onClick={handleClose}>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Security sx={{ fontSize: 16 }} />
+                  <Typography variant="body2">
+                    Role: {getRoleDisplayName()}
+                  </Typography>
+                </Box>
+              </MenuItem>
               <MenuItem onClick={handleLogout}>
                 <Typography variant="body2" color="error">
                   Logout

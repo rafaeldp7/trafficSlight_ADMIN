@@ -135,17 +135,12 @@ const AddMotor = () => {
         method,
         headers,
         body: JSON.stringify({
-          brand: "Generic", // Required field for backend
           model,
-          year: new Date().getFullYear(), // Default year
-          engineSize: engineDisplacement ? `${engineDisplacement}cc` : undefined,
+          engineDisplacement: engineDisplacement ? parseFloat(engineDisplacement) : undefined,
           power,
           torque,
           fuelTank: fuelTank ? parseFloat(fuelTank) : undefined,
-          fuelConsumption: parseFloat(fuelConsumption),
-          color: "Unknown", // Default color
-          fuelType: "gasoline", // Default fuel type
-          isActive: true
+          fuelConsumption: parseFloat(fuelConsumption)
         }),
       });
 
@@ -234,8 +229,15 @@ const AddMotor = () => {
   };
 
   const handleEdit = (motor) => {
-    setFormData({ ...motor });
-    setEditingId(motor._id);
+    setFormData({
+      model: motor.model || "",
+      engineDisplacement: motor.engineDisplacement || "",
+      power: motor.power || "",
+      torque: motor.torque || "",
+      fuelTank: motor.fuelTank || "",
+      fuelConsumption: motor.fuelConsumption || "",
+    });
+    setEditingId(motor.id || motor._id);
   };
 
   const handleCancelEdit = () => {
@@ -652,11 +654,11 @@ const AddMotor = () => {
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 'bold' }}>Model</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Displacement</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Engine (cc)</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Power</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Torque</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Fuel Tank</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Consumption</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Fuel Tank (L)</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Consumption (km/L)</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -675,7 +677,7 @@ const AddMotor = () => {
                   }}
                 >
                   <TableCell>{motor.model}</TableCell>
-                  <TableCell>{motor.engineSize || 'N/A'}</TableCell>
+                  <TableCell>{motor.engineDisplacement ? `${motor.engineDisplacement} cc` : 'N/A'}</TableCell>
                   <TableCell>{motor.power || 'N/A'}</TableCell>
                   <TableCell>{motor.torque || 'N/A'}</TableCell>
                   <TableCell>{motor.fuelTank ? `${motor.fuelTank} L` : 'N/A'}</TableCell>
@@ -739,11 +741,11 @@ const AddMotor = () => {
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 'bold' }}>Model</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Displacement</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Engine (cc)</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Power</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Torque</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Fuel Tank</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Consumption</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Fuel Tank (L)</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Consumption (km/L)</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -762,7 +764,7 @@ const AddMotor = () => {
                   }}
                 >
                   <TableCell>{motor.model}</TableCell>
-                  <TableCell>{motor.engineSize || 'N/A'}</TableCell>
+                  <TableCell>{motor.engineDisplacement ? `${motor.engineDisplacement} cc` : 'N/A'}</TableCell>
                   <TableCell>{motor.power || 'N/A'}</TableCell>
                   <TableCell>{motor.torque || 'N/A'}</TableCell>
                   <TableCell>{motor.fuelTank ? `${motor.fuelTank} L` : 'N/A'}</TableCell>

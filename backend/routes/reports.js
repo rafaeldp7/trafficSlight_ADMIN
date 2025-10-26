@@ -24,8 +24,8 @@ router.get('/location', getReportsByLocation);
 // Protected routes
 router.get('/:id', getReport);
 router.post('/', authenticateToken, createReport);
-router.put('/:id', authenticateToken, updateReport);
-router.delete('/:id', authenticateToken, deleteReport);
+router.put('/:id', authenticateAdmin, updateReport);
+router.delete('/:id', authenticateAdmin, deleteReport);
 router.post('/:id/comments', authenticateToken, addComment);
 
 // Admin routes

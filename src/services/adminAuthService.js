@@ -157,11 +157,11 @@ class AdminAuthService {
     }
   }
 
-  // GET /api/auth/profile - Get current user with role (using regular auth since we're using /api/auth/login)
+  // GET /api/auth/profile - Get current admin
   async getCurrentAdmin() {
     try {
-      // Try regular auth profile first
-      let response = await fetch(`${API_BASE_URL}/auth/profile`, {
+      // Try admin profile first
+      let response = await fetch(`${API_BASE_URL}/admin-auth/profile`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
@@ -171,9 +171,9 @@ class AdminAuthService {
         return { success: true, data };
       }
 
-      // If regular auth profile fails, try admin profile
-      console.log('⚠️ Regular auth profile failed, trying admin profile');
-      response = await fetch(`${API_BASE_URL}/admin-auth/profile`, {
+      // If admin profile fails, try regular auth profile
+      console.log('⚠️ Admin auth profile failed, trying regular auth profile');
+      response = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
@@ -190,8 +190,8 @@ class AdminAuthService {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           const adminData = {
-            _id: payload.userId,
-            email: payload.email,
+            _id: payload.id || payload.userId,
+            email: payload.email || 'admin@trafficslight.com',
             firstName: 'Admin',
             lastName: 'User',
             role: 'super_admin',
@@ -343,54 +343,33 @@ class AdminAuthService {
         }
       }
 
-      // Try backend verification using regular auth endpoint (since we're using /api/auth/login)
-      const verifyResponse = await fetch(`${API_BASE_URL}/auth/verify-token`, {
+      // Try backend verification
+      const verifyResponse = await fetch(`${API_BASE_URL}/admin-auth/verify-token`, {
         headers: this.getAuthHeaders()
       });
 
       if (!verifyResponse.ok) {
-        // Token is invalid, clear storage
-        localStorage.removeItem('adminToken');
-        localStorage.removeItem('adminData');
-        return { success: false, error: 'Token verification failed' };
+        console.warn('⚠️ Token verification failed:', verifyResponse.status);
+        // Don't clear storage on error, use fallback instead
+        throw new Error('Token verification failed');
       }
 
-      // Then get the current admin data with role
+      const verifyData = await verifyResponse.json();
+      
+      // If we got admin data directly from verify-token
+      if (verifyData.success && verifyData.data.admin) {
+        localStorage.setItem('adminData', JSON.stringify(verifyData.data.admin));
+        return { 
+          success: true, 
+          data: { admin: verifyData.data.admin } 
+        };
+      }
+
+      // Fallback: get current admin data
       const adminResponse = await this.getCurrentAdmin();
       
       if (adminResponse.success) {
-        // Transform user data to admin format for frontend compatibility
-        const user = adminResponse.data.user;
-        const adminData = {
-          id: user._id,
-          firstName: user.firstName || 'Admin',
-          lastName: user.lastName || 'User',
-          email: user.email,
-          role: {
-            name: user.role || 'super_admin',
-            displayName: user.roleInfo?.displayName || 'Super Admin',
-            level: user.roleInfo?.level || 100,
-            permissions: user.roleInfo?.permissions || {
-              canCreate: true,
-              canRead: true,
-              canUpdate: true,
-              canDelete: true,
-              canManageAdmins: true,
-              canAssignRoles: true,
-              canManageUsers: true,
-              canManageReports: true,
-              canManageTrips: true,
-              canManageGasStations: true,
-              canViewAnalytics: true,
-              canExportData: true
-            }
-          }
-        };
-        
-        // Store admin data for future use
-        localStorage.setItem('adminData', JSON.stringify(adminData));
-        
-        return { success: true, data: { admin: adminData } };
+        return adminResponse;
       } else {
         // Clear storage on error
         localStorage.removeItem('adminToken');

@@ -175,7 +175,7 @@ const updateTrip = async (req, res) => {
     await trip.save();
 
     // Log the trip update action (only if admin is updating)
-    if (req.user.isAdmin && req.user?.id) {
+    if (req.user?.id) {
       await logAdminAction(
         req.user.id,
         'UPDATE',
@@ -243,7 +243,7 @@ const deleteTrip = async (req, res) => {
     await Trip.findByIdAndDelete(req.params.id);
 
     // Log the trip deletion action (only if admin is deleting)
-    if (req.user.isAdmin && req.user?.id) {
+    if (req.user?.id) {
       await logAdminAction(
         req.user.id,
         'DELETE',

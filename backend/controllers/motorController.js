@@ -1,140 +1,128 @@
-const Motor = require('../../../models/Motor');
+const Motorcycle = require('../../../models/motorcycleModel');
+const Motor = require('../../../models/Motor'); // Keep for user motorcycles
 const UserMotor = require('../../../models/userMotorModel');
 const { logAdminAction } = require('./adminLogsController');
+const { sendErrorResponse, sendSuccessResponse } = require('../middleware/validation');
 
-// Get all motors (admin only)
+// Get all motorcycles (admin only) - Returns motorcycle catalog data
 const getMotors = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, brand, model, year } = req.query;
+    const { page = 1, limit = 1000, search, model, includeDeleted = false } = req.query;
 
-    // Build filter
+    // Build filter for motorcycle catalog
     const filter = {};
+    if (!includeDeleted) {
+      filter.isDeleted = { $ne: true };
+    }
     if (search) {
       filter.$or = [
-        { brand: new RegExp(search, 'i') },
-        { model: new RegExp(search, 'i') },
-        { plateNumber: new RegExp(search, 'i') }
+        { model: new RegExp(search, 'i') }
       ];
     }
-    if (brand) filter.brand = new RegExp(brand, 'i');
     if (model) filter.model = new RegExp(model, 'i');
-    if (year) filter.year = parseInt(year);
 
-    const motors = await Motor.find(filter)
-      .populate('owner', 'firstName lastName email')
+    // Fetch motorcycles from catalog
+    const motorcycles = await Motorcycle.find(filter)
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    const total = await Motor.countDocuments(filter);
+    const total = await Motorcycle.countDocuments(filter);
 
-    res.json({
-      success: true,
-      data: {
-        motors,
-        pagination: {
-          current: page,
-          pages: Math.ceil(total / limit),
-          total
-        }
+    // Transform motorcycles data for frontend compatibility
+    const transformedMotors = motorcycles.map(motorcycle => ({
+      _id: motorcycle._id,
+      id: motorcycle._id,
+      model: motorcycle.model,
+      engineDisplacement: motorcycle.engineDisplacement,
+      power: motorcycle.power,
+      torque: motorcycle.torque,
+      fuelTank: motorcycle.fuelTank,
+      fuelConsumption: motorcycle.fuelConsumption,
+      isDeleted: motorcycle.isDeleted,
+      createdAt: motorcycle.createdAt,
+      updatedAt: motorcycle.updatedAt
+    }));
+
+    sendSuccessResponse(res, {
+      motors: transformedMotors,
+      pagination: {
+        current: page,
+        pages: Math.ceil(total / limit),
+        total
       }
     });
   } catch (error) {
-    console.error('Get motors error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get motors',
-      error: error.message
-    });
+    console.error('Get motorcycles error:', error);
+    sendErrorResponse(res, 500, 'Failed to get motorcycles', error);
   }
 };
 
-// Get single motor
+// Get single motorcycle
 const getMotor = async (req, res) => {
   try {
-    const motor = await Motor.findById(req.params.id).populate('owner', 'firstName lastName email');
+    const motorcycle = await Motorcycle.findById(req.params.id);
 
-    if (!motor) {
-      return res.status(404).json({
-        success: false,
-        message: 'Motor not found'
-      });
+    if (!motorcycle) {
+      return sendErrorResponse(res, 404, 'Motorcycle not found');
     }
 
-    res.json({
-      success: true,
-      data: { motor }
-    });
+    sendSuccessResponse(res, { motor: motorcycle });
   } catch (error) {
-    console.error('Get motor error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get motor',
-      error: error.message
-    });
+    console.error('Get motorcycle error:', error);
+    sendErrorResponse(res, 500, 'Failed to get motorcycle', error);
   }
 };
 
-// Update motor
+// Update motorcycle
 const updateMotor = async (req, res) => {
   try {
-    const { brand, model, year, plateNumber, color, engineSize, fuelType, isActive } = req.body;
+    const { model, engineDisplacement, power, torque, fuelTank, fuelConsumption } = req.body;
 
-    const motor = await Motor.findById(req.params.id);
-    if (!motor) {
-      return res.status(404).json({
-        success: false,
-        message: 'Motor not found'
-      });
+    const motorcycle = await Motorcycle.findById(req.params.id);
+    if (!motorcycle) {
+      return sendErrorResponse(res, 404, 'Motorcycle not found');
     }
 
     // Store original data for logging
     const originalData = {
-      brand: motor.brand,
-      model: motor.model,
-      year: motor.year,
-      plateNumber: motor.plateNumber,
-      color: motor.color,
-      engineSize: motor.engineSize,
-      fuelType: motor.fuelType,
-      isActive: motor.isActive
+      model: motorcycle.model,
+      engineDisplacement: motorcycle.engineDisplacement,
+      power: motorcycle.power,
+      torque: motorcycle.torque,
+      fuelTank: motorcycle.fuelTank,
+      fuelConsumption: motorcycle.fuelConsumption
     };
 
     // Update fields
-    if (brand) motor.brand = brand;
-    if (model) motor.model = model;
-    if (year) motor.year = year;
-    if (plateNumber) motor.plateNumber = plateNumber;
-    if (color) motor.color = color;
-    if (engineSize) motor.engineSize = engineSize;
-    if (fuelType) motor.fuelType = fuelType;
-    if (isActive !== undefined) motor.isActive = isActive;
+    if (model) motorcycle.model = model;
+    if (engineDisplacement !== undefined) motorcycle.engineDisplacement = engineDisplacement;
+    if (power !== undefined) motorcycle.power = power;
+    if (torque !== undefined) motorcycle.torque = torque;
+    if (fuelTank !== undefined) motorcycle.fuelTank = fuelTank;
+    if (fuelConsumption !== undefined) motorcycle.fuelConsumption = fuelConsumption;
 
-    await motor.save();
+    await motorcycle.save();
 
-    // Log the motor update action
+    // Log the motorcycle update action
     if (req.user?.id) {
       await logAdminAction(
         req.user.id,
         'UPDATE',
-        'MOTOR',
+        'MOTORCYCLE',
         {
-          description: `Updated motor: ${motor.brand} ${motor.model} (${motor.plateNumber})`,
-          motorId: motor._id,
-          motorBrand: motor.brand,
-          motorModel: motor.model,
-          motorPlateNumber: motor.plateNumber,
+          description: `Updated motorcycle: ${motorcycle.model}`,
+          motorcycleId: motorcycle._id,
+          motorcycleModel: motorcycle.model,
           changes: {
             before: originalData,
             after: {
-              brand: motor.brand,
-              model: motor.model,
-              year: motor.year,
-              plateNumber: motor.plateNumber,
-              color: motor.color,
-              engineSize: motor.engineSize,
-              fuelType: motor.fuelType,
-              isActive: motor.isActive
+              model: motorcycle.model,
+              engineDisplacement: motorcycle.engineDisplacement,
+              power: motorcycle.power,
+              torque: motorcycle.torque,
+              fuelTank: motorcycle.fuelTank,
+              fuelConsumption: motorcycle.fuelConsumption
             }
           }
         },
@@ -142,179 +130,108 @@ const updateMotor = async (req, res) => {
       );
     }
 
-    res.json({
-      success: true,
-      message: 'Motor updated successfully',
-      data: { motor }
-    });
+    sendSuccessResponse(res, { motor: motorcycle }, 'Motorcycle updated successfully');
   } catch (error) {
-    console.error('Update motor error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update motor',
-      error: error.message
-    });
+    console.error('Update motorcycle error:', error);
+    sendErrorResponse(res, 500, 'Failed to update motorcycle', error);
   }
 };
 
-// Delete motor
+// Delete motorcycle
 const deleteMotor = async (req, res) => {
   try {
-    const motor = await Motor.findById(req.params.id);
-    if (!motor) {
-      return res.status(404).json({
-        success: false,
-        message: 'Motor not found'
-      });
+    const motorcycle = await Motorcycle.findById(req.params.id);
+    if (!motorcycle) {
+      return sendErrorResponse(res, 404, 'Motorcycle not found');
     }
 
-    // Store motor data for logging before deletion
+    // Store motorcycle data for logging before deletion
     const deletedMotorData = {
-      id: motor._id,
-      brand: motor.brand,
-      model: motor.model,
-      plateNumber: motor.plateNumber,
-      owner: motor.owner
+      id: motorcycle._id,
+      model: motorcycle.model
     };
 
-    await Motor.findByIdAndDelete(req.params.id);
+    // Soft delete - mark as deleted instead of removing
+    motorcycle.isDeleted = true;
+    await motorcycle.save();
 
-    // Log the motor deletion action
+    // Log the motorcycle deletion action
     if (req.user?.id) {
       await logAdminAction(
         req.user.id,
         'DELETE',
-        'MOTOR',
+        'MOTORCYCLE',
         {
-          description: `Deleted motor: ${deletedMotorData.brand} ${deletedMotorData.model} (${deletedMotorData.plateNumber})`,
-          motorId: deletedMotorData.id,
-          motorBrand: deletedMotorData.brand,
-          motorModel: deletedMotorData.model,
-          motorPlateNumber: deletedMotorData.plateNumber,
-          motorOwner: deletedMotorData.owner
+          description: `Deleted motorcycle: ${deletedMotorData.model}`,
+          motorcycleId: deletedMotorData.id,
+          motorcycleModel: deletedMotorData.model
         },
         req
       );
     }
 
-    res.json({
-      success: true,
-      message: 'Motor deleted successfully'
-    });
+    sendSuccessResponse(res, null, 'Motorcycle deleted successfully');
   } catch (error) {
-    console.error('Delete motor error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete motor',
-      error: error.message
-    });
+    console.error('Delete motorcycle error:', error);
+    sendErrorResponse(res, 500, 'Failed to delete motorcycle', error);
   }
 };
 
-// Get motor statistics
+// Get motorcycle statistics
 const getMotorStats = async (req, res) => {
   try {
-    const totalMotors = await Motor.countDocuments();
-    const activeMotors = await Motor.countDocuments({ isActive: true });
-    const newMotorsThisMonth = await Motor.countDocuments({
+    const totalMotors = await Motorcycle.countDocuments({ isDeleted: { $ne: true } });
+    const deletedMotors = await Motorcycle.countDocuments({ isDeleted: true });
+    const newMotorsThisMonth = await Motorcycle.countDocuments({
       createdAt: {
         $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-      }
+      },
+      isDeleted: { $ne: true }
     });
 
-    // Get motors by brand
-    const motorsByBrand = await Motor.aggregate([
-      {
-        $group: {
-          _id: '$brand',
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]);
-
-    // Get motors by year
-    const motorsByYear = await Motor.aggregate([
-      {
-        $group: {
-          _id: '$year',
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { _id: -1 } },
-      { $limit: 10 }
-    ]);
-
-    // Get motors by fuel type
-    const motorsByFuelType = await Motor.aggregate([
-      {
-        $group: {
-          _id: '$fuelType',
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { count: -1 } }
-    ]);
-
-    res.json({
-      success: true,
-      data: {
-        overall: {
-          totalMotors,
-          activeMotors,
-          inactiveMotors: totalMotors - activeMotors,
-          newMotorsThisMonth
-        },
-        distribution: {
-          byBrand: motorsByBrand,
-          byYear: motorsByYear,
-          byFuelType: motorsByFuelType
-        }
+    sendSuccessResponse(res, {
+      overall: {
+        totalMotors,
+        deletedMotors,
+        newMotorsThisMonth
       }
     });
   } catch (error) {
-    console.error('Get motor stats error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get motor statistics',
-      error: error.message
-    });
+    console.error('Get motorcycle stats error:', error);
+    sendErrorResponse(res, 500, 'Failed to get motorcycle statistics', error);
   }
 };
 
-// Get motors by brand
+// Get motorcycles by model
 const getMotorsByBrand = async (req, res) => {
   try {
-    const { brand } = req.params;
+    const { model } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
-    const motors = await Motor.find({ brand: new RegExp(brand, 'i') })
-      .populate('owner', 'firstName lastName email')
+    const motorcycles = await Motorcycle.find({ 
+      model: new RegExp(model, 'i'),
+      isDeleted: { $ne: true }
+    })
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    const total = await Motor.countDocuments({ brand: new RegExp(brand, 'i') });
+    const total = await Motorcycle.countDocuments({ 
+      model: new RegExp(model, 'i'),
+      isDeleted: { $ne: true }
+    });
 
-    res.json({
-      success: true,
-      data: {
-        motors,
-        pagination: {
-          current: page,
-          pages: Math.ceil(total / limit),
-          total
-        }
+    sendSuccessResponse(res, {
+      motors: motorcycles,
+      pagination: {
+        current: page,
+        pages: Math.ceil(total / limit),
+        total
       }
     });
   } catch (error) {
-    console.error('Get motors by brand error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get motors by brand',
-      error: error.message
-    });
+    console.error('Get motorcycles by model error:', error);
+    sendErrorResponse(res, 500, 'Failed to get motorcycles by model', error);
   }
 };
 
@@ -332,97 +249,106 @@ const getUserMotors = async (req, res) => {
 
     const total = await UserMotor.countDocuments({ userId });
 
-    res.json({
-      success: true,
-      data: {
-        userMotors,
-        pagination: {
-          current: page,
-          pages: Math.ceil(total / limit),
-          total
-        }
+    sendSuccessResponse(res, {
+      userMotors,
+      pagination: {
+        current: page,
+        pages: Math.ceil(total / limit),
+        total
       }
     });
   } catch (error) {
     console.error('Get user motors error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get user motors',
-      error: error.message
-    });
+    sendErrorResponse(res, 500, 'Failed to get user motors', error);
   }
 };
 
-// Create motor (admin only)
+// Create motorcycle (admin only)
 const createMotor = async (req, res) => {
   try {
-    const { brand, model, year, plateNumber, color, engineSize, fuelType, ownerId } = req.body;
+    const { model, engineDisplacement, power, torque, fuelTank, fuelConsumption } = req.body;
 
-    // Check if plate number already exists
-    if (plateNumber) {
-      const existingMotor = await Motor.findOne({ plateNumber });
+    // Check if model already exists
+    if (model) {
+      const existingMotor = await Motorcycle.findOne({ model });
       if (existingMotor) {
-        return res.status(400).json({
-          success: false,
-          message: 'Motor with this plate number already exists'
-        });
+        return sendErrorResponse(res, 400, 'Motorcycle with this model already exists');
       }
     }
 
-    const motor = new Motor({
-      brand,
+    const motorcycle = new Motorcycle({
       model,
-      year,
-      plateNumber,
-      color,
-      engineSize,
-      fuelType,
-      owner: ownerId,
-      isActive: true
+      engineDisplacement,
+      power,
+      torque,
+      fuelTank,
+      fuelConsumption,
+      isDeleted: false
     });
 
-    await motor.save();
+    await motorcycle.save();
 
-    // If owner is specified, create user-motor relationship
-    if (ownerId) {
-      const userMotor = new UserMotor({
-        userId: ownerId,
-        motorId: motor._id,
-        isPrimary: true
-      });
-      await userMotor.save();
-    }
-
-    // Log the motor creation action
+    // Log the motorcycle creation action
     if (req.user?.id) {
       await logAdminAction(
         req.user.id,
         'CREATE',
-        'MOTOR',
+        'MOTORCYCLE',
         {
-          description: `Created new motor: ${motor.brand} ${motor.model} (${motor.plateNumber})`,
-          motorId: motor._id,
-          motorBrand: motor.brand,
-          motorModel: motor.model,
-          motorPlateNumber: motor.plateNumber,
-          motorOwner: motor.owner
+          description: `Created new motorcycle: ${motorcycle.model}`,
+          motorcycleId: motorcycle._id,
+          motorcycleModel: motorcycle.model,
+          motorcycleFuelConsumption: motorcycle.fuelConsumption
         },
         req
       );
     }
 
-    res.status(201).json({
-      success: true,
-      message: 'Motor created successfully',
-      data: { motor }
-    });
+    sendSuccessResponse(res, { motor: motorcycle }, 'Motorcycle created successfully');
   } catch (error) {
-    console.error('Create motor error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create motor',
-      error: error.message
-    });
+    console.error('Create motorcycle error:', error);
+    sendErrorResponse(res, 500, 'Failed to create motorcycle', error);
+  }
+};
+
+// Restore motorcycle (admin only)
+const restoreMotor = async (req, res) => {
+  try {
+    const motorcycle = await Motorcycle.findById(req.params.id);
+    if (!motorcycle) {
+      return sendErrorResponse(res, 404, 'Motorcycle not found');
+    }
+
+    // Store motorcycle data for logging
+    const restoredMotorData = {
+      id: motorcycle._id,
+      model: motorcycle.model
+    };
+
+    // Restore motorcycle
+    motorcycle.isDeleted = false;
+    await motorcycle.save();
+
+    // Log the motorcycle restoration action
+    if (req.user?.id) {
+      await logAdminAction(
+        req.user.id,
+        'UPDATE',
+        'MOTORCYCLE',
+        {
+          description: `Restored motorcycle: ${restoredMotorData.model}`,
+          motorcycleId: restoredMotorData.id,
+          motorcycleModel: restoredMotorData.model,
+          action: 'restore'
+        },
+        req
+      );
+    }
+
+    sendSuccessResponse(res, { motor: motorcycle }, 'Motorcycle restored successfully');
+  } catch (error) {
+    console.error('Restore motorcycle error:', error);
+    sendErrorResponse(res, 500, 'Failed to restore motorcycle', error);
   }
 };
 
@@ -432,6 +358,7 @@ module.exports = {
   createMotor,
   updateMotor,
   deleteMotor,
+  restoreMotor,
   getMotorStats,
   getMotorsByBrand,
   getUserMotors

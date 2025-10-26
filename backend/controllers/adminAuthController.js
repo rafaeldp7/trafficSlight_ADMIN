@@ -203,9 +203,35 @@ const adminLogin = async (req, res) => {
   }
 };
 
-// Get current user profile
+// Get current admin profile
 const getProfile = async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    // Try to find admin first
+    const admin = await Admin.findById(req.user.id).select('-password');
+    
+    if (admin) {
+      // Admin found, return admin data
+      const adminObj = admin.toObject();
+      adminObj.roleInfo = admin.getRoleInfo();
+      
+      return res.json({
+        success: true,
+        data: { 
+          admin: adminObj,
+          user: adminObj // Also include as user for backward compatibility
+        }
+      });
+    }
+    
+    // If admin not found, try to find user
     const user = await User.findById(req.user.id).select('-password');
     if (!user) {
       return res.status(404).json({
@@ -231,6 +257,14 @@ const getProfile = async (req, res) => {
 // Update user profile
 const updateProfile = async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
     const { firstName, lastName, phone, address } = req.body;
     const user = await User.findById(req.user.id);
 
@@ -277,6 +311,14 @@ const updateProfile = async (req, res) => {
 // Change password
 const changePassword = async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
     const { currentPassword, newPassword } = req.body;
     const user = await User.findById(req.user.id);
 

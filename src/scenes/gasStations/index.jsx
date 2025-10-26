@@ -33,10 +33,29 @@ import axios from "axios";
 import Header from "components/Header";
 import FlexBetween from "components/FlexBetween";
 
+// Create authenticated axios instance
+const createAuthenticatedAxios = () => {
+  const instance = axios.create();
+  
+  // Add request interceptor to include auth token
+  instance.interceptors.request.use((config) => {
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  });
+  
+  return instance;
+};
+
+// Use authenticated axios instance for all API calls
+const authAxios = createAuthenticatedAxios();
+
 const defaultCenter = { lat: 14.7006, lng: 120.9836 };
 const defaultZoom = 12;
 const ITEMS_PER_PAGE = 3;
-const API_URL = "https://ts-backend-1-jyit.onrender.com/api/gas-stations";
+const API_URL = "https://ts-backend-1-jyit.onrender.com/api/admin-gas-stations";
 
 // Static libraries array to prevent performance warnings
 const GOOGLE_MAPS_LIBRARIES = ["places"];
@@ -102,9 +121,39 @@ const GasStationsPage = () => {
   });
 
   const fetchStations = () => {
-    axios.get(API_URL).then((res) => {
-      setStations(res.data);
-      setFiltered(res.data);
+    authAxios.get(API_URL).then((res) => {
+      // Handle different response structures
+      let stationsData = [];
+      
+      // If response has gasStations property
+      if (res.data.gasStations && Array.isArray(res.data.gasStations)) {
+        stationsData = res.data.gasStations;
+      } 
+      // If response has data.gasStations (nested)
+      else if (res.data.data && res.data.data.gasStations && Array.isArray(res.data.data.gasStations)) {
+        stationsData = res.data.data.gasStations;
+      }
+      // If response.data is an array
+      else if (res.data && Array.isArray(res.data)) {
+        stationsData = res.data;
+      }
+      // If response has data property with array
+      else if (res.data.data && Array.isArray(res.data.data)) {
+        stationsData = res.data.data;
+      }
+      
+      setStations(stationsData);
+      setFiltered(stationsData);
+    }).catch((error) => {
+      console.error('Error fetching gas stations:', error);
+      if (error.response?.status === 401) {
+        alert('Session expired. Please login again.');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminData');
+        window.location.href = '/login';
+      }
+      setStations([]);
+      setFiltered([]);
     });
   };
 
@@ -165,7 +214,21 @@ const handleEdit = (s) => {
 
 
   const handleDelete = (id) => {
-    axios.delete(`${API_URL}/${id}`).then(fetchStations);
+    authAxios.delete(`${API_URL}/${id}`)
+      .then(() => {
+        fetchStations();
+      })
+      .catch((error) => {
+        console.error('Error deleting gas station:', error);
+        if (error.response?.status === 401) {
+          alert('Session expired. Please login again.');
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminData');
+          window.location.href = '/login';
+        } else {
+          alert(`Failed to delete gas station: ${error.response?.data?.message || error.message}`);
+        }
+      });
   };
 
 const handleSubmit = () => {
@@ -191,26 +254,38 @@ const handleSubmit = () => {
     servicesOffered: form.servicesOffered || [],
   };
 
-  const method = editId ? axios.put : axios.post;
+  const method = editId ? authAxios.put : authAxios.post;
   const url = editId ? `${API_URL}/${editId}` : API_URL;
 
-  method(url, payload).then(() => {
-    setModalOpen(false);
-    fetchStations();
-    setEditId(null);
-    setForm({
-      name: "",
-      brand: "",
-      fuelPrices: { gasoline: "", diesel: "", premium: "" },
-      location: { lat: 14.7006, lng: 120.9836 },
-      address: "",
-      city: "",
-      state: "",
-      postalCode: "",
-      servicesOffered: [],
-      openHours: "",
+  method(url, payload)
+    .then(() => {
+      setModalOpen(false);
+      fetchStations();
+      setEditId(null);
+      setForm({
+        name: "",
+        brand: "",
+        fuelPrices: { gasoline: "", diesel: "", premium: "" },
+        location: { lat: 14.7006, lng: 120.9836 },
+        address: "",
+        city: "",
+        state: "",
+        postalCode: "",
+        servicesOffered: [],
+        openHours: "",
+      });
+    })
+    .catch((error) => {
+      console.error('Error saving gas station:', error);
+      if (error.response?.status === 401) {
+        alert('Session expired. Please login again.');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminData');
+        window.location.href = '/login';
+      } else {
+        alert(`Failed to ${editId ? 'update' : 'create'} gas station: ${error.response?.data?.message || error.message}`);
+      }
     });
-  });
 };
 
 const getStats = () => {

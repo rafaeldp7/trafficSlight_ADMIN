@@ -2,6 +2,7 @@ const Report = require('../../../models/Reports');
 const User = require('../../../models/User');
 const Notification = require('../../../models/Notification');
 const { logAdminAction } = require('./adminLogsController');
+const { sendErrorResponse, sendSuccessResponse } = require('../middleware/validation');
 
 // Get all reports with filtering and pagination
 const getReports = async (req, res) => {
@@ -50,24 +51,17 @@ const getReports = async (req, res) => {
 
     const total = await Report.countDocuments(filter);
 
-    res.json({
-      success: true,
-      data: {
-        reports,
-        pagination: {
-          current: page,
-          pages: Math.ceil(total / limit),
-          total
-        }
+    sendSuccessResponse(res, {
+      reports,
+      pagination: {
+        current: page,
+        pages: Math.ceil(total / limit),
+        total
       }
     });
   } catch (error) {
     console.error('Get reports error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get reports',
-      error: error.message
-    });
+    sendErrorResponse(res, 500, 'Failed to get reports', error);
   }
 };
 
@@ -81,26 +75,16 @@ const getReport = async (req, res) => {
       .populate('comments.author', 'firstName lastName');
 
     if (!report) {
-      return res.status(404).json({
-        success: false,
-        message: 'Report not found'
-      });
+      return sendErrorResponse(res, 404, 'Report not found');
     }
 
     // Increment views
     await report.incrementViews();
 
-    res.json({
-      success: true,
-      data: { report }
-    });
+    sendSuccessResponse(res, { report });
   } catch (error) {
     console.error('Get report error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get report',
-      error: error.message
-    });
+    sendErrorResponse(res, 500, 'Failed to get report', error);
   }
 };
 
@@ -156,6 +140,15 @@ const updateReport = async (req, res) => {
       });
     }
 
+    // Store original report data for logging
+    const originalReport = {
+      title: report.title,
+      description: report.description,
+      status: report.status,
+      priority: report.priority,
+      reportType: report.reportType
+    };
+
     // Update fields
     Object.keys(req.body).forEach(key => {
       if (req.body[key] !== undefined) {
@@ -164,6 +157,25 @@ const updateReport = async (req, res) => {
     });
 
     await report.save();
+
+    // Log the report update action
+    if (req.user?.id) {
+      await logAdminAction(
+        req.user.id,
+        'UPDATE',
+        'REPORT',
+        {
+          description: `Updated report: "${report.title}" (ID: ${report._id})`,
+          reportId: report._id,
+          reportTitle: report.title,
+          reportType: report.reportType,
+          changes: req.body,
+          originalStatus: originalReport.status,
+          newStatus: report.status
+        },
+        req
+      );
+    }
 
     res.json({
       success: true,
@@ -200,7 +212,35 @@ const deleteReport = async (req, res) => {
       });
     }
 
+    // Store report data for logging before deletion
+    const reportData = {
+      id: report._id,
+      title: report.title,
+      description: report.description,
+      status: report.status,
+      priority: report.priority,
+      reportType: report.reportType
+    };
+
     await Report.findByIdAndDelete(req.params.id);
+
+    // Log the report deletion action
+    if (req.user?.id) {
+      await logAdminAction(
+        req.user.id,
+        'DELETE',
+        'REPORT',
+        {
+          description: `Deleted report: "${reportData.title}" (ID: ${reportData.id})`,
+          reportId: reportData.id,
+          reportTitle: reportData.title,
+          reportType: reportData.reportType,
+          reportStatus: reportData.status,
+          reportPriority: reportData.priority
+        },
+        req
+      );
+    }
 
     res.json({
       success: true,
@@ -497,6 +537,113 @@ const archiveReport = async (req, res) => {
   }
 };
 
+// Reverse geocoding endpoint for reports - Get address from coordinates
+const reverseGeocodeReport = async (req, res) => {
+  try {
+    const { lat, lng } = req.query;
+    
+    if (!lat || !lng) {
+      return sendErrorResponse(res, 400, 'Latitude and longitude are required');
+    }
+    
+    // Create a temporary report instance to use the method
+    const tempReport = new Report({
+      location: {
+        latitude: parseFloat(lat),
+        longitude: parseFloat(lng)
+      }
+    });
+    
+    const address = await tempReport.reverseGeocode();
+    
+    sendSuccessResponse(res, {
+      coordinates: { lat: parseFloat(lat), lng: parseFloat(lng) },
+      address: address,
+      geocodedAddress: tempReport.geocodedAddress,
+      geocodingStatus: tempReport.geocodingStatus
+    }, 'Address retrieved successfully');
+  } catch (error) {
+    console.error('Reverse geocoding error:', error);
+    sendErrorResponse(res, 500, 'Failed to perform reverse geocoding', error);
+  }
+};
+
+// Bulk reverse geocoding for multiple reports
+const bulkReverseGeocodeReports = async (req, res) => {
+  try {
+    const { reportIds } = req.body;
+    
+    if (!reportIds || !Array.isArray(reportIds)) {
+      return sendErrorResponse(res, 400, 'reportIds array is required');
+    }
+    
+    const results = await Report.reverseGeocodeReports(reportIds);
+    
+    sendSuccessResponse(res, {
+      results,
+      summary: {
+        total: results.length,
+        successful: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length
+      }
+    }, 'Bulk reverse geocoding completed');
+  } catch (error) {
+    console.error('Bulk reverse geocoding error:', error);
+    sendErrorResponse(res, 500, 'Failed to perform bulk reverse geocoding', error);
+  }
+};
+
+// Auto-reverse geocode a specific report
+const autoReverseGeocodeReport = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+    
+    if (!report) {
+      return sendErrorResponse(res, 404, 'Report not found');
+    }
+    
+    if (!report.location.latitude || !report.location.longitude) {
+      return sendErrorResponse(res, 400, 'Report does not have valid coordinates');
+    }
+    
+    const address = await report.reverseGeocode();
+    await report.save();
+    
+    // Log the reverse geocoding action
+    if (req.user?.id) {
+      await logAdminAction(
+        req.user.id,
+        'UPDATE',
+        'REPORT',
+        {
+          description: `Auto-reverse geocoded report: "${report.description}" (ID: ${report._id})`,
+          reportId: report._id,
+          reportDescription: report.description,
+          geocodedAddress: address,
+          coordinates: {
+            latitude: report.location.latitude,
+            longitude: report.location.longitude
+          }
+        },
+        req
+      );
+    }
+    
+    sendSuccessResponse(res, {
+      report: {
+        _id: report._id,
+        geocodedAddress: report.geocodedAddress,
+        address: report.address,
+        geocodingStatus: report.geocodingStatus,
+        geocodingError: report.geocodingError
+      }
+    }, 'Report reverse geocoded successfully');
+  } catch (error) {
+    console.error('Auto reverse geocoding error:', error);
+    sendErrorResponse(res, 500, 'Failed to auto reverse geocode report', error);
+  }
+};
+
 module.exports = {
   getReports,
   getReport,
@@ -508,5 +655,8 @@ module.exports = {
   addComment,
   getReportsByLocation,
   getReportStats,
-  archiveReport
+  archiveReport,
+  reverseGeocodeReport,
+  bulkReverseGeocodeReports,
+  autoReverseGeocodeReport
 };

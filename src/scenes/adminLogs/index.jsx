@@ -22,13 +22,15 @@ import {
   Card,
   CardContent,
   Grid,
-  Button
+  Button,
+  useTheme
 } from '@mui/material';
 import { Search, FilterList, Refresh, History } from '@mui/icons-material';
 import Header from 'components/Header';
 import FlexBetween from 'components/FlexBetween';
 
 const AdminLogs = () => {
+  const theme = useTheme();
   const [logs, setLogs] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
@@ -358,15 +360,49 @@ const AdminLogs = () => {
                     label={`${getActionIcon(log.action)} ${log.action}`}
                     color={getActionColor(log.action)}
                     size="small"
-                    variant="outlined"
+                    variant="filled"
+                    sx={{
+                      fontWeight: 500,
+                      '& .MuiChip-label': {
+                        color: 'white'
+                      },
+                      backgroundColor: 
+                        log.action === 'CREATE' ? theme.palette.success.main :
+                        log.action === 'UPDATE' ? (theme.palette.mode === 'dark' ? theme.palette.primary.main : theme.palette.primary.dark) :
+                        log.action === 'DELETE' ? theme.palette.error.main :
+                        log.action === 'LOGIN' ? theme.palette.info.main :
+                        theme.palette.secondary.main,
+                      '&:hover': {
+                        backgroundColor: 
+                          log.action === 'CREATE' ? theme.palette.success.dark :
+                          log.action === 'UPDATE' ? (theme.palette.mode === 'dark' ? theme.palette.primary.dark : theme.palette.primary.main) :
+                          log.action === 'DELETE' ? theme.palette.error.dark :
+                          log.action === 'LOGIN' ? theme.palette.info.dark :
+                          theme.palette.secondary.dark,
+                      }
+                    }}
                   />
                 </TableCell>
                 <TableCell>
                   <Chip 
                     label={log.resource}
-                    color="default"
+                    color="secondary"
                     size="small"
-                    variant="outlined"
+                    variant="filled"
+                    sx={{
+                      fontWeight: 500,
+                      backgroundColor: theme.palette.mode === 'dark' 
+                        ? theme.palette.grey[800] 
+                        : theme.palette.grey[700],
+                      '& .MuiChip-label': {
+                        color: 'white'
+                      },
+                      '&:hover': {
+                        backgroundColor: theme.palette.mode === 'dark' 
+                          ? theme.palette.grey[700] 
+                          : theme.palette.grey[600],
+                      }
+                    }}
                   />
                 </TableCell>
                 <TableCell>

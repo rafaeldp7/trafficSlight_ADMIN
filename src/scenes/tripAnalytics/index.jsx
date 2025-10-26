@@ -57,7 +57,7 @@ const AdminTripsDashboard = () => {
       const res = await axios.get(`${API}/analytics/summary`);
       const data = res.data;
       setStats([
-        { label: "Total Trips", value: data.analytics.totalTrips },
+        { label: "Total Trips", value: data.totalTrips },
         
       ]);
     } catch (err) {
@@ -369,7 +369,7 @@ const AdminTripsDashboard = () => {
                 <TableCell>{trip._id || "Unknown"}</TableCell>
                 <TableCell>
                   <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
-                    {trip.motorId?.motorcycleId?.name
+                    {trip.motorId?.motorcycleId?.model
                       ? `${trip.motorId.motorcycleId.model} (${trip.motorId.motorcycleId.engineDisplacement}cc)`
                       : "Model N/A"}
                   </Typography>
