@@ -19,6 +19,9 @@ const API = "https://ts-backend-1-jyit.onrender.com";
 const defaultCenter = { lat: 14.7006, lng: 120.9836 };
 const ITEMS_PER_PAGE = 5;
 
+// Static libraries array to prevent Google Maps API reload warning
+const GOOGLE_MAPS_LIBRARIES = ["places"];
+
 console.log("API: " + API);
 // Force all icons to be red
 const getReportIcon = () => {
@@ -70,7 +73,7 @@ const MapsAndTraffic = () => {
   
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4",
-    libraries: ["places"],
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   const [reports, setReports] = useState([]);
@@ -113,10 +116,11 @@ const stationRefs = useRef({});
   const handleMapLoad = (map) => {
     mapRef.current = map;
   };
-  useEffect(() => {
+  // Fetch data only when component mounts (not on every navigation)
+  React.useMemo(() => {
     fetchReports();
     fetchStations();
-  }, []);
+  }, []); // Empty dependency array - only runs once
 
   const zoomToLocation = (lat, lng) => {
     if (
@@ -148,7 +152,7 @@ const stationRefs = useRef({});
   const fetchStations = async () => {
     try {
       const res = await fetch(`${API}/api/gas-stations`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!res.ok) throw new Error("Fetch failed");
@@ -176,8 +180,8 @@ const stationRefs = useRef({});
     console.log("📍 Stations fetched:", stations.length);
     stations.forEach((s, i) => {
       console.log(
-        `Marker ${i + 1}: ${s.name} at [${s.location.coordinates[1]}, ${
-          s.location.coordinates[0]
+        `Marker ${i + 1}: ${s.name} at [${s.location?.coordinates?.[1] || 0}, ${
+          s.location?.coordinates?.[0] || 0
         }]`
       );
     });
@@ -206,7 +210,6 @@ const handleSubmit = async () => {
       method,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
       body: JSON.stringify(payload),
     });
@@ -247,8 +250,8 @@ const handleEdit = (station) => {
     diesel: station.fuelPrices?.diesel?.toString() || "",
     servicesOffered: station.servicesOffered || [],
     openHours: station.openHours || "",
-    lat: station.location.coordinates[1],
-    lng: station.location.coordinates[0],
+    lat: station.location?.coordinates?.[1] || 0,
+    lng: station.location?.coordinates?.[0] || 0,
   });
   setEditingId(station._id);
   setOpenModal(true);
@@ -262,7 +265,7 @@ const handleDelete = async (id) => {
     const res = await fetch(`${API}/api/gas-stations/${id}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        'Content-Type': 'application/json',
       },
     });
 
@@ -404,7 +407,7 @@ const handleDelete = async (id) => {
               setMarkerPreview({ lat, lng });
             }}
           >
-            {reports.map((r, i) => (
+            {(reports || []).map((r, i) => (
               <Marker
                 key={i}
                 position={{ lat: r.location.latitude, lng: r.location.longitude }}
@@ -419,8 +422,8 @@ const handleDelete = async (id) => {
                   key={s._id || s.name + s.lat}
                   
                   position={{
-                    lat: s.location.coordinates[1], // correct: latitude
-                    lng: s.location.coordinates[0], // correct: longitude
+                    lat: s.location?.coordinates?.[1] || 0, // correct: latitude
+                    lng: s.location?.coordinates?.[0] || 0, // correct: longitude
                   }}
                   icon={getGasIcon(s.name)}
                   onClick={() => setSelectedMarker({ type: "station", data: s })}
@@ -449,7 +452,7 @@ const handleDelete = async (id) => {
           <Typography variant="h6" color="text.primary" gutterBottom fontWeight="bold">
             Reports
           </Typography>
-          {currentReports.map((r, i) => (
+          {(currentReports || []).map((r, i) => (
             <Box
               key={i}
               mt={2}
@@ -491,7 +494,7 @@ const handleDelete = async (id) => {
 
           <Box mt={3} display="flex" justifyContent="center">
             <Pagination
-              count={Math.ceil(reports.length / ITEMS_PER_PAGE)}
+              count={Math.ceil((reports || []).length / ITEMS_PER_PAGE)}
               page={reportPage}
               onChange={(_, val) => setReportPage(val)}
               color="primary"
@@ -503,7 +506,7 @@ const handleDelete = async (id) => {
           <Typography variant="h6" color="text.primary" gutterBottom fontWeight="bold">
             Gas Stations
           </Typography>
-          {currentStations.map((s) => (
+          {(currentStations || []).map((s) => (
             <Box
               key={s._id}
               ref={(el) => (stationRefs.current[s._id] = el)}
@@ -511,7 +514,7 @@ const handleDelete = async (id) => {
               p={2.5}
               border={`1px solid ${theme.palette.divider}`}
               borderRadius={2}
-              onClick={() => zoomToLocation(s.location.coordinates[1], s.location.coordinates[0])}
+              onClick={() => zoomToLocation(s.location?.coordinates?.[1] || 0, s.location?.coordinates?.[0] || 0)}
               sx={{
                 cursor: "pointer",
                 backgroundColor: theme.palette.mode === 'dark' 
@@ -532,7 +535,7 @@ const handleDelete = async (id) => {
 
               {s.address && (
                 <Typography variant="body2" mt={1} color="text.primary">
-                  📍 {s.address.street}, {s.address.barangay || ""}, {s.address.city || ""}, {s.address.province || ""}
+                  📍 {s.address?.street || ""}, {s.address?.barangay || ""}, {s.address?.city || ""}, {s.address?.province || ""}
                 </Typography>
               )}
 

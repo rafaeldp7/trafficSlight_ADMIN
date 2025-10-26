@@ -1,7 +1,7 @@
 // Admin Authentication Context
 // Aligned with backend AdminAuthController and Admin model structure
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { adminAuthService } from '../services/adminAuthService';
 
 export const AdminAuthContext = createContext();
@@ -51,7 +51,7 @@ export const AdminAuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     try {
       setLoading(true);
       setError(null);
@@ -73,9 +73,9 @@ export const AdminAuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -95,7 +95,7 @@ export const AdminAuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const updateProfile = async (profileData) => {
     try {
@@ -165,46 +165,81 @@ export const AdminAuthProvider = ({ children }) => {
     }
   };
 
-  const refreshAdmin = async () => {
+  const refreshAdmin = useCallback(async () => {
     try {
       if (isAuthenticated) {
         const response = await getProfile();
         if (!response.success) {
           // If refresh fails, admin might be logged out
-          logout();
+          // Don't call logout() here to prevent infinite loops
+          setAdmin(null);
+          setIsAuthenticated(false);
         }
       }
     } catch (error) {
       console.error('Refresh admin error:', error);
-      logout();
+      // Don't call logout() here to prevent infinite loops
+      setAdmin(null);
+      setIsAuthenticated(false);
     }
-  };
+  }, [isAuthenticated]);
 
-  const clearError = () => {
+  const clearError = useCallback(() => {
     setError(null);
-  };
+  }, []);
 
   // Permission checking methods
-  const hasPermission = (permission) => {
-    if (!admin || !admin.role || !admin.role.permissions) {
+  const hasPermission = useCallback((permission) => {
+    if (!admin || !admin.role) {
       return false;
     }
-    return admin.role.permissions[permission] === true;
-  };
 
-  const canCreate = () => hasPermission('canCreate');
-  const canRead = () => hasPermission('canRead');
-  const canUpdate = () => hasPermission('canUpdate');
-  const canDelete = () => hasPermission('canDelete');
-  const canManageAdmins = () => hasPermission('canManageAdmins');
-  const canAssignRoles = () => hasPermission('canAssignRoles');
-  const canManageUsers = () => hasPermission('canManageUsers');
-  const canManageReports = () => hasPermission('canManageReports');
-  const canManageTrips = () => hasPermission('canManageTrips');
-  const canManageGasStations = () => hasPermission('canManageGasStations');
-  const canViewAnalytics = () => hasPermission('canViewAnalytics');
-  const canExportData = () => hasPermission('canExportData');
-  const canManageSettings = () => hasPermission('canManageSettings');
+    // If role has permissions object, use it
+    if (admin.role.permissions && admin.role.permissions[permission] !== undefined) {
+      return admin.role.permissions[permission] === true;
+    }
+
+    // Otherwise, determine permissions based on role name and level
+    const roleName = admin.role.name || admin.role;
+    const roleLevel = admin.role.level || 0;
+    
+    // Super Admin (Level 100) - Full system access
+    if (roleName === 'super_admin' || roleLevel >= 100) {
+      return true;
+    }
+    
+    // Admin (Level 50) - Standard administrative access
+    if (roleName === 'admin' || roleLevel >= 50) {
+      // Admin can do most things except manage other admins and system settings
+      return permission !== 'canManageAdmins' && 
+             permission !== 'canAssignRoles' && 
+             permission !== 'canManageSettings';
+    }
+    
+    // Moderator (Level 25) - Content moderation access
+    if (roleName === 'moderator' || roleLevel >= 25) {
+      // Moderator can only read and limited update
+      return permission === 'canRead' || 
+             (permission === 'canUpdate' && 
+              (permission === 'canManageReports' || permission === 'canManageTrips'));
+    }
+    
+    return false;
+  }, [admin]);
+
+  const canCreate = useCallback(() => hasPermission('canCreate'), [hasPermission]);
+  const canRead = useCallback(() => hasPermission('canRead'), [hasPermission]);
+  const canUpdate = useCallback(() => hasPermission('canUpdate'), [hasPermission]);
+  const canDelete = useCallback(() => hasPermission('canDelete'), [hasPermission]);
+  const canManageAdmins = useCallback(() => hasPermission('canManageAdmins'), [hasPermission]);
+  const canAssignRoles = useCallback(() => hasPermission('canAssignRoles'), [hasPermission]);
+  const canManageUsers = useCallback(() => hasPermission('canManageUsers'), [hasPermission]);
+  const canManageReports = useCallback(() => hasPermission('canManageReports'), [hasPermission]);
+  const canManageTrips = useCallback(() => hasPermission('canManageTrips'), [hasPermission]);
+  const canManageGasStations = useCallback(() => hasPermission('canManageGasStations'), [hasPermission]);
+  const canViewAnalytics = useCallback(() => hasPermission('canViewAnalytics'), [hasPermission]);
+  const canExportData = useCallback(() => hasPermission('canExportData'), [hasPermission]);
+  const canManageSettings = useCallback(() => hasPermission('canManageSettings'), [hasPermission]);
 
   const value = {
     // State

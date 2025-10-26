@@ -38,6 +38,9 @@ const defaultZoom = 12;
 const ITEMS_PER_PAGE = 3;
 const API_URL = "https://ts-backend-1-jyit.onrender.com/api/gas-stations";
 
+// Static libraries array to prevent performance warnings
+const GOOGLE_MAPS_LIBRARIES = ["places"];
+
 const getGasIcon = (brand = "") => {
   const lower = brand.toLowerCase();
   const iconMap = {
@@ -82,6 +85,10 @@ const GasStationsPage = () => {
   brand: "",
   fuelPrices: { gasoline: "", diesel: "", premium: "" },
   location: { lat: 14.7006, lng: 120.9836 },
+  address: "",
+  city: "",
+  state: "",
+  postalCode: "",
   servicesOffered: [],
   openHours: "",
 });
@@ -91,7 +98,7 @@ const GasStationsPage = () => {
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4",
-    libraries: ["places"],
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   const fetchStations = () => {
@@ -101,14 +108,15 @@ const GasStationsPage = () => {
     });
   };
 
-  useEffect(() => {
+  // Fetch data only when component mounts (not on every navigation)
+  React.useMemo(() => {
     fetchStations();
-  }, []);
+  }, []); // Empty dependency array - only runs once
 
   const handleSearch = (val) => {
     setSearch(val);
     setFiltered(
-      stations.filter((s) =>
+      (stations || []).filter((s) =>
         s.name.toLowerCase().includes(val.toLowerCase())
       )
     );
@@ -122,13 +130,13 @@ const GasStationsPage = () => {
     }
   };
 
-  const currentStations = filtered.slice(
+  const currentStations = (filtered || []).slice(
     (page - 1) * ITEMS_PER_PAGE,
     page * ITEMS_PER_PAGE
   );
 
   const avgPrice = (
-    filtered.reduce((acc, s) => acc + (s.price || 0), 0) / filtered.length
+    (filtered || []).reduce((acc, s) => acc + (s.price || 0), 0) / (filtered || []).length
   ).toFixed(2);
 
 const handleEdit = (s) => {
@@ -146,6 +154,10 @@ const handleEdit = (s) => {
       lat: s.location?.coordinates?.[1] || 14.7006,
       lng: s.location?.coordinates?.[0] || 120.9836,
     },
+    address: s.address || "",
+    city: s.city || "",
+    state: s.state || "",
+    postalCode: s.postalCode || "",
     servicesOffered: s.servicesOffered || [],
   });
   setModalOpen(true);
@@ -169,9 +181,13 @@ const handleSubmit = () => {
     },
     openHours: form.openHours,
     location: {
-      lat: parseFloat(form.location.lat),
-      lng: parseFloat(form.location.lng),
+      type: 'Point',
+      coordinates: [parseFloat(form.location.lng), parseFloat(form.location.lat)]
     },
+    address: form.address || '',
+    city: form.city || '',
+    state: form.state || '',
+    postalCode: form.postalCode || '',
     servicesOffered: form.servicesOffered || [],
   };
 
@@ -187,6 +203,10 @@ const handleSubmit = () => {
       brand: "",
       fuelPrices: { gasoline: "", diesel: "", premium: "" },
       location: { lat: 14.7006, lng: 120.9836 },
+      address: "",
+      city: "",
+      state: "",
+      postalCode: "",
       servicesOffered: [],
       openHours: "",
     });
@@ -195,10 +215,10 @@ const handleSubmit = () => {
 
 const getStats = () => {
   return {
-    totalStations: filtered.length,
-    avgGasoline: (filtered.reduce((acc, s) => acc + (parseFloat(s.fuelPrices?.gasoline) || 0), 0) / filtered.length).toFixed(2),
-    avgDiesel: (filtered.reduce((acc, s) => acc + (parseFloat(s.fuelPrices?.diesel) || 0), 0) / filtered.length).toFixed(2),
-    avgPremium: (filtered.reduce((acc, s) => acc + (parseFloat(s.fuelPrices?.premium) || 0), 0) / filtered.length).toFixed(2),
+    totalStations: (filtered || []).length,
+    avgGasoline: ((filtered || []).reduce((acc, s) => acc + (parseFloat(s.fuelPrices?.gasoline) || 0), 0) / (filtered || []).length).toFixed(2),
+    avgDiesel: ((filtered || []).reduce((acc, s) => acc + (parseFloat(s.fuelPrices?.diesel) || 0), 0) / (filtered || []).length).toFixed(2),
+    avgPremium: ((filtered || []).reduce((acc, s) => acc + (parseFloat(s.fuelPrices?.premium) || 0), 0) / (filtered || []).length).toFixed(2),
   };
 };
 
@@ -221,6 +241,10 @@ const getStats = () => {
                 brand: "",
                 fuelPrices: { gasoline: "", diesel: "", premium: "" },
                 location: { lat: 14.7006, lng: 120.9836 },
+                address: "",
+                city: "",
+                state: "",
+                postalCode: "",
                 servicesOffered: [],
                 openHours: "",
               });
@@ -489,7 +513,7 @@ const getStats = () => {
               <Divider sx={{ mb: 2 }} />
             </Box>
             <Box>
-              {currentStations.map((s) => (
+              {(currentStations || []).map((s) => (
                 <Box 
                   key={s._id} 
                   sx={{ 
@@ -515,7 +539,7 @@ const getStats = () => {
                         {s.name}
                       </Typography>
                         <Typography variant="body2" color="text.secondary">
-                        { s.address.street || 
+                        { s.address || 
                         'No address available'}
                       </Typography>
                     </Box>
@@ -547,7 +571,7 @@ const getStats = () => {
                       variant="outlined"
                       size="small"
                       startIcon={<LocationOn />}
-                      onClick={() => zoomToLocation(s.location.coordinates[1], s.location.coordinates[0])}
+                      onClick={() => zoomToLocation(s.location?.coordinates?.[1] || 0, s.location?.coordinates?.[0] || 0)}
                       sx={{
                         borderColor: alpha(theme.palette.secondary.main, 0.5),
                         color: theme.palette.secondary.main,
@@ -585,7 +609,7 @@ const getStats = () => {
             </Box>
             <Box p={2} display="flex" justifyContent="center">
               <Pagination
-                count={Math.ceil(filtered.length / ITEMS_PER_PAGE)}
+                count={Math.ceil((filtered || []).length / ITEMS_PER_PAGE)}
                 page={page}
                 onChange={(e, val) => setPage(val)}
                 color="secondary"
@@ -616,25 +640,25 @@ const getStats = () => {
     mapContainerStyle={{ height: "100%", width: "100%" }}
     onLoad={(map) => (mapRef.current = map)}
   >
-    {stations.map((s) => (
+    {(stations || []).map((s) => (
       <Marker
         key={s._id}
         position={{
-          lat: s.location.coordinates[1],
-          lng: s.location.coordinates[0],
+          lat: s.location?.coordinates?.[1] || 0,
+          lng: s.location?.coordinates?.[0] || 0,
         }}
-        title={`${s.name} - ${s.address.street}`}
+        title={`${s.name} - ${s.address?.street || 'No address'}`}
         icon={getGasIcon(s.name)}
         onClick={() => setSelectedStation(s)}
-        onDblClick={() => zoomToLocation(s.location.coordinates[1], s.location.coordinates[0])}
+        onDblClick={() => zoomToLocation(s.location?.coordinates?.[1] || 0, s.location?.coordinates?.[0] || 0)}
       />
     ))}
 
     {selectedStation && (
   <InfoBox
     position={{
-      lat: selectedStation.location.coordinates[1],
-      lng: selectedStation.location.coordinates[0],
+      lat: selectedStation.location?.coordinates?.[1] || 0,
+      lng: selectedStation.location?.coordinates?.[0] || 0,
     }}
     options={{
       closeBoxURL: "", // hides the default X
@@ -662,7 +686,7 @@ const getStats = () => {
       </div>
 
       {/* Address */}
-      <p style={{ margin: "4px 0" }}>{selectedStation.address.street}</p>
+      <p style={{ margin: "4px 0" }}>{selectedStation.address || 'No address'}</p>
 
       {/* Fuel Prices */}
       <p style={{ margin: "4px 0" }}>
@@ -702,20 +726,20 @@ const getStats = () => {
                   mapContainerStyle={{ height: "100%", width: "100%" }}
                   onLoad={(map) => (mapRef.current = map)}
                 >
-                  {stations.map((s) => (
+                  {(stations || []).map((s) => (
                     <Marker
                       size="medium"
                       key={s._id}
                       onClick={() => {
-                        zoomToLocation(s.location.coordinates[1], s.location.coordinates[0]);
+                        zoomToLocation(s.location?.coordinates?.[1] || 0, s.location?.coordinates?.[0] || 0);
                         Toast.info(`${s.name} - ${s.brand}`);
                         // toast.info(`${s.name} - ${s.brand}`);
                       }}
                       position={{
-                        lat: s.location.coordinates[1],
-                        lng: s.location.coordinates[0],
+                        lat: s.location?.coordinates?.[1] || 0,
+                        lng: s.location?.coordinates?.[0] || 0,
                       }}
-                      title={`${s.name} - ${s.address.street}`}
+                      title={`${s.name} - ${s.address?.street || 'No address'}`}
                       icon={getGasIcon(s.name)}
                     />
                   ))}

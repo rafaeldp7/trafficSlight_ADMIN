@@ -46,7 +46,7 @@ const navItems = [
   { text: "Gas Stations", text2: "gasStations", icon: <LocalGasStation /> },
 
   // { section: "System Administration" },
-  { text: "Admin Dashboard", text2: "adminDashboard", icon: <DashboardIcon /> },
+  // { text: "Admin Dashboard", text2: "adminDashboard", icon: <DashboardIcon /> }, // Hidden as requested
   { text: "Admin Management", text2: "adminManagement", icon: <AdminPanelSettings /> },
   { text: "Admin Logs", text2: "adminLogs", icon: <History /> },
 

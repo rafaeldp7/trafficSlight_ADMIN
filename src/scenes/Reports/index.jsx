@@ -16,6 +16,7 @@ import {
   Divider,
   alpha,
   Alert,
+  CircularProgress,
 } from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
@@ -23,6 +24,7 @@ import { Bar, Pie } from "react-chartjs-2";
 import { Chart, registerables } from "chart.js";
 import Header from "components/Header";
 import FlexBetween from "components/FlexBetween";
+import { usePermissions } from "hooks/usePermissions";
 import {
   useGetReportsQuery,
   useGetArchivedReportsQuery,
@@ -38,6 +40,7 @@ import {
   InfoWindow,
   InfoBox,
   StandaloneSearchBox,
+  TrafficLayer,
 } from "@react-google-maps/api";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -48,12 +51,16 @@ import {
   ReportProblem,
   Search,
   Verified,
+  LocationOn,
 } from "@mui/icons-material";
 import PlaceAutocompleteBox from "components/PlaceAutocompleteBox";
 Chart.register(...registerables);
 
 const defaultCenter = { lat: 14.7006, lng: 120.9836 };
 const defaultZoom = 12;
+
+// Static libraries array to prevent performance warnings
+const GOOGLE_MAPS_LIBRARIES = ["places"];
 
 const markerIcons = {
   Accident: "/assets/reportMarkers/accident.png",
@@ -62,10 +69,68 @@ const markerIcons = {
   Hazard: "/assets/reportMarkers/hazard.png",
 };
 
+// Helper function to create marker icon (copied from Gas Stations)
+const getReportIcon = (reportType = "") => {
+  const iconMap = {
+    "Accident": "/assets/reportMarkers/accident.png",
+    "Traffic Jam": "/assets/reportMarkers/traffic.png",
+    "Road Closure": "/assets/reportMarkers/closure.png",
+    "Hazard": "/assets/reportMarkers/hazard.png",
+  };
+
+  return {
+    url: iconMap[reportType] || "/assets/reportMarkers/hazard.png",
+    scaledSize: typeof window !== "undefined" && window.google
+      ? new window.google.maps.Size(40, 40)
+      : undefined,
+  };
+};
+
+// Fallback marker icon for when custom icons fail to load
+const getFallbackMarkerIcon = () => {
+  if (typeof window === 'undefined' || !window.google || !window.google.maps) {
+    return undefined;
+  }
+  
+  return {
+    url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+    scaledSize: new window.google.maps.Size(32, 32),
+  };
+};
+
 const ReportsDashboard = () => {
   const theme = useTheme();
-  const { data: reportsData = [], isLoading, isError, refetch } = useGetReportsQuery(undefined, { pollingInterval: 10000 });
-  const { data: archivedData = [], isLoading: isLoadingArchived } = useGetArchivedReportsQuery(undefined, { pollingInterval: 10000 });
+  const { canRead, canCreate, canUpdate, canDelete, canOnlyView, userRoleDisplay } = usePermissions();
+  const { data: reportsData = [], isLoading, isError, error, refetch } = useGetReportsQuery(undefined, { pollingInterval: 10000 });
+  const { data: archivedData = [], isLoading: isLoadingArchived, isError: isArchivedError, error: archivedError } = useGetArchivedReportsQuery(undefined, { pollingInterval: 10000 });
+  
+  // Separate state for markers to update independently of map
+  const [markersData, setMarkersData] = useState([]);
+  // Removed reportStats query due to 404 error - endpoint doesn't exist on backend
+
+  // Update markers data when reports data changes (every 10 seconds)
+  useEffect(() => {
+    if (reportsData && reportsData.length > 0) {
+      const activeReports = reportsData.filter((r) => r && r.archived !== true);
+      setMarkersData(activeReports);
+      console.log("🔄 Markers updated:", {
+        totalReports: reportsData.length,
+        activeReports: activeReports.length,
+        timestamp: new Date().toLocaleTimeString()
+      });
+    }
+  }, [reportsData]);
+
+  // Debug logging for reports data
+  useEffect(() => {
+    console.log("📊 Reports Data:", {
+      reportsData,
+      isLoading,
+      isError,
+      error,
+      reportsCount: reportsData?.length || 0
+    });
+  }, [reportsData, isLoading, isError, error]);
   const [createReport] = useCreateReportMutation();
   const [updateReport] = useUpdateReportMutation();
   const [archiveReport] = useArchiveReportMutation();
@@ -87,6 +152,13 @@ const ReportsDashboard = () => {
   const [marker, setMarker] = useState(null);
   const mapRef = useRef(null);
   const [selectedReport, setSelectedReport] = useState(null);
+  const [isFullWidth, setIsFullWidth] = useState(false); // Toggle between full width and 8 columns
+
+  // Toggle between full width and sidebar layout
+  const toggleLayout = () => {
+    setIsFullWidth(!isFullWidth);
+    // Map will automatically adjust to new container size
+  };
 
   //ARCHIVED REPORTS
   const [archivedFiltered, setArchivedFiltered] = useState([]);
@@ -94,15 +166,26 @@ const ReportsDashboard = () => {
   //For search box
   const searchBoxRef = useRef(null);
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4",
-    libraries: ["places"],
+    googleMapsApiKey: "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4",
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
+
+  // Debug map loading
+  useEffect(() => {
+    console.log("🗺️ Map Loading Status:", {
+      isLoaded,
+      apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ? 'Set' : 'Missing',
+      fallbackKey: "AIzaSyAzFeqvqzZUO9kfLVZZOrlOwP5Fg4LpLf4"
+    });
+  }, [isLoaded]);
   const zoomToLocation = (lat, lng) => {
     if (mapRef.current) {
       mapRef.current.panTo({ lat, lng });
       mapRef.current.setZoom(16);
     }
   };
+
+  // Map renders once, markers update every 10 seconds via polling
   const getAddressFromCoords = async (lat, lng) => {
     try {
       const res = await fetch(
@@ -347,15 +430,19 @@ const handleVerifybyAdmin = async (reportId = null) => {
       sortable: false,
       renderCell: (params) => (
         <Box>
-          <IconButton color="error" onClick={() => handleEdit(params.row)}>
-            <EditIcon />
-          </IconButton>
-          <IconButton
-            color="error"
-            onClick={() => handleDelete(params.row._id)}
-          >
-            <DeleteIcon />
-          </IconButton>
+          {canUpdate && (
+            <IconButton color="error" onClick={() => handleEdit(params.row)}>
+              <EditIcon />
+            </IconButton>
+          )}
+          {canDelete && (
+            <IconButton
+              color="error"
+              onClick={() => handleDelete(params.row._id)}
+            >
+              <DeleteIcon />
+            </IconButton>
+          )}
           <IconButton
             color="secondary"
             onClick={() =>
@@ -478,6 +565,45 @@ const handleVerifybyAdmin = async (reportId = null) => {
     return stats;
   };
 
+  // Error handling
+  if (isError) {
+    return (
+      <Box p="1.5rem 2.5rem" sx={{ backgroundColor: theme.palette.background.default }}>
+        <Header title="Reports Dashboard" />
+        <Alert severity="error" sx={{ mt: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            Failed to load reports
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {error?.data?.message || error?.message || 'An error occurred while loading reports. Please try again.'}
+          </Typography>
+          <Button 
+            variant="contained" 
+            onClick={() => refetch()} 
+            sx={{ mt: 2 }}
+          >
+            Retry
+          </Button>
+        </Alert>
+      </Box>
+    );
+  }
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Box p="1.5rem 2.5rem" sx={{ backgroundColor: theme.palette.background.default }}>
+        <Header title="Reports Dashboard" />
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress />
+          <Typography variant="body1" sx={{ ml: 2 }}>
+            Loading reports...
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box
       p="1.5rem 2.5rem"
@@ -485,17 +611,46 @@ const handleVerifybyAdmin = async (reportId = null) => {
     >
       {/* Header Section */}
       <Box mb={4}>
-        <Box>
-          <Header
-            title="Reports Dashboard"
-            subtitle="Monitor and manage traffic incidents and road conditions"
-          />
-          {/* <Header title="Reports Dashboard" />
-            <Typography variant="subtitle1" color="text.secondary" mt={1}>
-              Monitor and manage traffic incidents and road conditions
-            </Typography> */}
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box>
+            <Header
+              title="Reports Dashboard"
+              subtitle="Monitor and manage traffic incidents and road conditions"
+            />
+          </Box>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Typography variant="body2" color="text.secondary">
+              {isFullWidth ? "Full Width" : "Sidebar Layout"}
+            </Typography>
+            <Button
+              variant={isFullWidth ? "contained" : "outlined"}
+              onClick={toggleLayout}
+              startIcon={isFullWidth ? "📱" : "📊"}
+              sx={{
+                backgroundColor: isFullWidth ? theme.palette.secondary.main : 'transparent',
+                borderColor: theme.palette.secondary.main,
+                color: isFullWidth ? 'white' : theme.palette.secondary.main,
+                '&:hover': {
+                  backgroundColor: isFullWidth 
+                    ? theme.palette.secondary.dark 
+                    : alpha(theme.palette.secondary.main, 0.1),
+                }
+              }}
+            >
+              {isFullWidth ? "Show Sidebar" : "Full Width Map"}
+            </Button>
+          </Box>
         </Box>
       </Box>
+
+      {/* Permission-based access warning */}
+      {canOnlyView && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            You are logged in as <strong>{userRoleDisplay}</strong>. You have read-only access to reports.
+          </Typography>
+        </Alert>
+      )}
 
       {/* Overview Section */}
       <Box mb={4}>
@@ -503,22 +658,28 @@ const handleVerifybyAdmin = async (reportId = null) => {
           Overview
         </Typography>
         <Box mb={3}>
-          <Button
-            variant="contained"
-            onClick={() => setModalOpen(true)}
-            startIcon={<EditIcon />}
-            sx={{
-              backgroundColor: theme.palette.secondary.main,
-              "&:hover": {
-                backgroundColor: theme.palette.secondary.dark,
-              },
-              px: 3,
-              py: 1.5,
-              borderRadius: 2,
-            }}
-          >
-            New Report
-          </Button>
+          {canCreate ? (
+            <Button
+              variant="contained"
+              onClick={() => setModalOpen(true)}
+              startIcon={<EditIcon />}
+              sx={{
+                backgroundColor: theme.palette.secondary.main,
+                "&:hover": {
+                  backgroundColor: theme.palette.secondary.dark,
+                },
+                px: 3,
+                py: 1.5,
+                borderRadius: 2,
+              }}
+            >
+              New Report
+            </Button>
+          ) : (
+            <Alert severity="warning" sx={{ maxWidth: 400 }}>
+              You don't have permission to create reports. Contact your administrator.
+            </Alert>
+          )}
         </Box>
         <Grid container spacing={3}>
           <Grid item xs={12} md={3}>
@@ -571,8 +732,9 @@ const handleVerifybyAdmin = async (reportId = null) => {
                   <img
                     src="/assets/reportMarkers/accident.png"
                     alt="accident marker"
-                    height={"50%"}
+                    height={50}
                     width={50}
+                    style={{ objectFit: 'contain' }}
                   />
                   {/* <Warning sx={{ fontSize: 30, color: theme.palette.error.main }} /> */}
                 </Box>
@@ -633,8 +795,9 @@ const handleVerifybyAdmin = async (reportId = null) => {
                   <img
                     src="/assets/reportMarkers/traffic.png"
                     alt="traffic marker"
-                    height={"50%"}
+                    height={50}
                     width={50}
+                    style={{ objectFit: 'contain' }}
                   />
                   {/* <TrafficRounded sx={{ fontSize: 30, color: theme.palette.warning.main }} /> */}
                 </Box>
@@ -691,8 +854,9 @@ const handleVerifybyAdmin = async (reportId = null) => {
                   <img
                     src="/assets/reportMarkers/closure.png"
                     alt="road closure marker"
-                    height={"50%"}
+                    height={50}
                     width={50}
+                    style={{ objectFit: 'contain' }}
                   />
                   {/* <Block sx={{ fontSize: 30, color: theme.palette.info.main }} /> */}
                 </Box>
@@ -753,8 +917,9 @@ const handleVerifybyAdmin = async (reportId = null) => {
                   <img
                     src="/assets/reportMarkers/hazard.png"
                     alt="hazard marker"
-                    height={"50%"}
+                    height={50}
                     width={50}
+                    style={{ objectFit: 'contain' }}
                   />
                   {/* <ReportProblem sx={{ fontSize: 30, color: theme.palette.success.main }} /> */}
                 </Box>
@@ -763,6 +928,7 @@ const handleVerifybyAdmin = async (reportId = null) => {
           </Grid>
         </Grid>
       </Box>
+
 
       {/* Search and Filter Section */}
       <Paper
@@ -824,191 +990,628 @@ const handleVerifybyAdmin = async (reportId = null) => {
         </Box>
       </Paper>
 
-      {/* Map Section */}
-      {isLoaded && (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            mb: 4,
-            borderRadius: 2,
-            backgroundColor: theme.palette.background.paper,
-            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          }}
-        >
-          <Typography
-            variant="h5"
-            color="text.primary"
-            fontWeight="bold"
-            mb={3}
-          >
-            Live Map View
-          </Typography>
-          <Divider sx={{ mb: 3 }} />
-          <Box height="400px">
-            <GoogleMap
-              mapContainerStyle={{
-                height: "100%",
-                width: "100%",
-                borderRadius: 8,
+      {/* Conditional Layout */}
+      {isFullWidth ? (
+        // Full Width Map Layout
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <Paper 
+              elevation={0}
+              sx={{ 
+                p: 3,
+                borderRadius: 2,
+                backgroundColor: theme.palette.background.paper,
+                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
               }}
-              center={defaultCenter}
-              zoom={12}
-              onLoad={(map) => (mapRef.current = map)}
             >
-              {(reportsData || []).filter((r) => r && r.archived !== true).map((report) => (
-                <Marker
-                  key={report._id}
-                  onClick={() => {
-                    // zoomToLocation(report.location.latitude, report.location.longitude);
-                    setSelectedReport(report);
-                  }}
-                  onDblClick={() =>
-                    zoomToLocation(
-                      report?.location?.latitude,
-                      report?.location?.longitude
-                    )
-                  }
-                  position={{
-                    lat: report?.location?.latitude,
-                    lng: report?.location?.longitude,
-                  }}
-                  title={`${report.reportType} - ${report.description}`}
-                  icon={(() => {
-                    const url = markerIcons[report.reportType] || undefined;
-                    const hasGoogle = typeof window !== 'undefined' && window.google && window.google.maps;
-                    const size = hasGoogle ? new window.google.maps.Size(64, 64) : undefined;
-                    return url ? { url, scaledSize: size } : undefined;
-                  })()}
-                />
-              ))}
-              {selectedReport && (
-                <InfoBox
-                  position={{
-                    lat: selectedReport?.location?.latitude,
-                    lng: selectedReport?.location?.longitude,
-                  }}
-                  options={{
-                    closeBoxURL: "", // para walang default X
-                    enableEventPropagation: true,
-                  }}
-                  onCloseClick={() => setSelectedReport(null)}
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6" color="text.primary" fontWeight="bold">
+                  Live Map View (Full Width) - Auto Updates Every 10s
+                </Typography>
+              </Box>
+              <Divider sx={{ mb: 3 }} />
+              
+              {/* Debug Info */}
+              <Box mb={2} p={2} sx={{ backgroundColor: alpha(theme.palette.info.main, 0.1), borderRadius: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Debug Info:</strong> Total Reports: {reportsData?.length || 0} | 
+                  Active Reports: {(reportsData || []).filter((r) => r && r.archived !== true).length} | 
+                  Markers: {markersData?.length || 0} |
+                  With Coordinates: {markersData.filter((r) => r.location?.latitude && r.location?.longitude).length} |
+                  Map Loaded: {isLoaded ? 'Yes' : 'No'} |
+                  Map Ref: {mapRef.current ? 'Set' : 'Not Set'} |
+                  Last Update: {new Date().toLocaleTimeString()}
+                </Typography>
+                {markersData.slice(0, 3).map((report, index) => (
+                  <Typography key={index} variant="caption" color="text.secondary" display="block">
+                    Report {index + 1}: {report.reportType} - Lat: {report.location?.latitude || 'N/A'} - Lng: {report.location?.longitude || 'N/A'}
+                  </Typography>
+                ))}
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                  <strong>Test:</strong> Look for the test marker at center of map (14.7006, 120.9836). If you see it, the map is working.
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  <strong>Map Status:</strong> {isLoaded ? '✅ Loaded' : '❌ Loading...'} | 
+                  <strong> Reports:</strong> {(reportsData || []).length} | 
+                  <strong> With Coords:</strong> {(reportsData || []).filter((r) => r && r.archived !== true && r.location?.latitude && r.location?.longitude).length}
+                </Typography>
+              </Box>
+              
+              {!isLoaded ? (
+                <Box 
+                  display="flex" 
+                  justifyContent="center" 
+                  alignItems="center" 
+                  height="400px"
+                  flexDirection="column"
+                  gap={2}
+                  sx={{ backgroundColor: alpha(theme.palette.info.main, 0.1), borderRadius: 2 }}
                 >
-                  <Box
-                    sx={{
-                      p: 1.5,
-                      minWidth: 200,
-                      borderRadius: 2,
-                      boxShadow: 3,
-                      backgroundColor: theme.palette.background.paper,
-                      color: theme.palette.text.primary,
+                  <CircularProgress />
+                  <Typography variant="body2" color="text.secondary">
+                    Loading Google Maps...
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    API Key: {process.env.REACT_APP_GOOGLE_MAPS_API_KEY ? '✅ Set' : '❌ Missing'}
+                  </Typography>
+                </Box>
+              ) : (
+                <Box 
+                  data-map-container
+                  sx={{ height: "90vh", borderRadius: 2, overflow: 'hidden' }}
+                >
+                  <GoogleMap
+                    center={defaultCenter}
+                    zoom={12}
+                    mapContainerStyle={{ height: "100%", width: "100%" }}
+                    onLoad={(map) => {
+                      mapRef.current = map;
+                      console.log("🗺️ Google Map loaded successfully");
+                      setTimeout(() => {
+                        if (window.google && map) {
+                          window.google.maps.event.trigger(map, 'resize');
+                        }
+                      }, 100);
+                    }}
+                    options={{
+                      mapTypeControl: true,
+                      streetViewControl: true,
+                      fullscreenControl: true,
+                      zoomControl: true,
                     }}
                   >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Typography variant="subtitle1" fontWeight="bold">
-                          {selectedReport.reportType}
-                        </Typography>
-                        {selectedReport.verified?.verifiedByAdmin === 1 && (
-                          <Verified 
-                            sx={{ 
-                              color: theme.palette.success.main,
-                              fontSize: 20 
-                            }} 
-                            title="Verified by Admin"
-                          />
-                        )}
-                      </Box>
-                      {/* custom close button */}
-                      <Typography
-                        sx={{
-                          cursor: "pointer",
-                          fontWeight: "bold",
-                          color: "grey.600",
+                    <TrafficLayer />
+                    
+                    {/* Test Marker - Always show this to verify map is working */}
+                    <Marker
+                      position={{ lat: 14.7006, lng: 120.9836 }}
+                      title="Test Marker - Map is working"
+                      onClick={() => console.log("✅ Test marker clicked - map is working!")}
+                    />
+                    
+                    {/* Simple Test Marker with default icon */}
+                    <Marker
+                      position={{ lat: 14.7006, lng: 120.9846 }}
+                      title="Simple Test Marker"
+                      onClick={() => console.log("✅ Simple test marker clicked!")}
+                    />
+                    
+                    {/* Render markers using Gas Stations pattern */}
+                    {(reportsData || []).filter((r) => r && r.archived !== true).map((report) => (
+                      <Marker
+                        key={report._id}
+                        position={{
+                          lat: report.location?.latitude || 0,
+                          lng: report.location?.longitude || 0,
                         }}
-                        onClick={() => setSelectedReport(null)}
+                        title={`${report.reportType} - ${report.description}`}
+                        icon={getReportIcon(report.reportType)}
+                        onClick={() => setSelectedReport(report)}
+                        onDblClick={() => zoomToLocation(report.location?.latitude || 0, report.location?.longitude || 0)}
+                      />
+                    ))}
+
+                  {selectedReport && (
+                    <InfoBox
+                      position={{
+                        lat: selectedReport.location?.latitude || 0,
+                        lng: selectedReport.location?.longitude || 0,
+                      }}
+                      options={{
+                        closeBoxURL: "", // hides the default X
+                        enableEventPropagation: true,
+                      }}
+                      onCloseClick={() => setSelectedReport(null)}
+                    >
+                      <div
+                        style={{
+                          backgroundColor: "white",
+                          padding: "12px",
+                          borderRadius: "8px",
+                          boxShadow: "0px 2px 6px rgba(0,0,0,0.3)",
+                          minWidth: "200px",
+                        }}
                       >
-                        ✕
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <h3 style={{ margin: 0 }}>{selectedReport.reportType}</h3>
+                          <span
+                            style={{ cursor: "pointer", fontWeight: "bold", color: "#555" }}
+                            onClick={() => setSelectedReport(null)}
+                          >
+                            ✕
+                          </span>
+                        </div>
+
+                        {/* Report Details */}
+                        <p style={{ margin: "4px 0" }}>{selectedReport.address || 'No address'}</p>
+                        <p style={{ margin: "4px 0" }}>
+                          {selectedReport.description || 'No description'}
+                        </p>
+                        <p style={{ margin: "4px 0" }}>
+                          Time: {selectedReport.timestamp ? new Date(selectedReport.timestamp).toLocaleString() : 'N/A'}
+                        </p>
+                        <p style={{ margin: "4px 0" }}>
+                          Verified: {selectedReport.verified?.verifiedByAdmin === 1 ? 'Yes' : 'No'}
+                        </p>
+
+                        {/* Action Buttons */}
+                        <div style={{ marginTop: "8px", display: "flex", gap: "8px" }}>
+                          <button
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: "6px",
+                              border: "none",
+                              backgroundColor: "#1976d2",
+                              color: "white",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => handleEdit(selectedReport)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: "6px",
+                              border: "none",
+                              backgroundColor: "#4caf50",
+                              color: "white",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => handleVerifybyAdmin(selectedReport._id)}
+                          >
+                            Verify
+                          </button>
+                          <button
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: "6px",
+                              border: "none",
+                              backgroundColor: "#f44336",
+                              color: "white",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => {
+                              if (selectedReport?._id) {
+                                handleDelete(selectedReport._id);
+                              }
+                            }}
+                          >
+                            Archive
+                          </button>
+                        </div>
+                      </div>
+                    </InfoBox>
+                  )}
+                  </GoogleMap>
+                </Box>
+              )}
+            </Paper>
+          </Grid>
+        </Grid>
+      ) : (
+        // Sidebar Layout (Original)
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={4}>
+          <Paper 
+            elevation={0}
+            sx={{ 
+              p: 3,
+              mb: 3,
+              borderRadius: 2,
+              backgroundColor: theme.palette.background.paper,
+              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            }}
+          >
+            <Typography variant="h6" color="text.primary" fontWeight="bold" mb={2}>
+              Search Reports
+            </Typography>
+            <TextField
+              autoComplete="off"
+              fullWidth
+              placeholder="Search by type or description..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              InputProps={{
+                startAdornment: <Search sx={{ mr: 1, color: theme.palette.text.secondary }} />,
+              }}
+              sx={{
+                backgroundColor: theme.palette.mode === 'light' 
+                  ? alpha(theme.palette.common.black, 0.02)
+                  : alpha(theme.palette.common.white, 0.02),
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: theme.palette.secondary.main,
+                  },
+                },
+              }}
+            />
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <InputLabel>Filter by Type</InputLabel>
+              <Select
+                value={typeFilter}
+                label="Filter by Type"
+                onChange={(e) => setTypeFilter(e.target.value)}
+                sx={{
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: alpha(theme.palette.divider, 0.2),
+                  },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: theme.palette.secondary.main,
+                  },
+                }}
+              >
+                <MenuItem value="All">All</MenuItem>
+                {reportTypes.map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {type}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Paper>
+
+          <Paper 
+            elevation={0}
+            sx={{ 
+              borderRadius: 2,
+              backgroundColor: theme.palette.background.paper,
+              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            }}
+          >
+            <Box p={3}>
+              <Typography variant="h6" color="text.primary" fontWeight="bold" mb={2}>
+                Reports List
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+            </Box>
+            <Box>
+              {(filtered || []).slice(0, 10).map((report) => (
+                <Box 
+                  key={report._id} 
+                  sx={{ 
+                    p: 3,
+                    borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      backgroundColor: theme.palette.mode === 'dark' 
+                        ? alpha(theme.palette.secondary.main, 0.1)
+                        : alpha(theme.palette.secondary.main, 0.05),
+                    }
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={2} mb={1}>
+                    <Box 
+                      component="img" 
+                      src={markerIcons[report.reportType] || "/assets/reportMarkers/hazard.png"}
+                      alt={report.reportType}
+                      sx={{ width: 40, height: 40 }}
+                    />
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        {report.reportType}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {report.address || 'No address available'}
                       </Typography>
                     </Box>
+                  </Box>
 
-                    <Typography variant="body2" color="text.secondary">
-                      Report ID: {selectedReport._id || "N/A"}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Time:{" "}
-                      {selectedReport.timestamp
-                        ? new Date(selectedReport.timestamp).toLocaleString()
-                        : "N/A"}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Address: {selectedReport.address || "N/A"}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Description: {selectedReport.description || "N/A"}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Verified By Admin:{" "}
-                      {selectedReport.verified?.verifiedByAdmin}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Verified By User:{" "}
-                      {selectedReport.verified?.verifiedByUser || "N/A"}
-                    </Typography>
+                  <Typography variant="body2" color="text.secondary" mb={2}>
+                    {report.description || 'No description'}
+                  </Typography>
 
-                    {/* <Box
-                      component="img"
-                      src="/assets/trafficSlight_logo.png"
-                      alt="Marker"
-                      sx={{ width: 50, height: 50, borderRadius: 2 }}
-                      
-                    /> */}
-                    <Box
-                      mt={1}
-                      display="flex"
-                      justifyContent="space-between"
-                      gap={1}
+                  <Box display="flex" alignItems="center" gap={1} mb={2}>
+                    {report.verified?.verifiedByAdmin === 1 && (
+                      <Verified 
+                        sx={{ 
+                          color: theme.palette.success.main,
+                          fontSize: 18 
+                        }} 
+                        title="Verified by Admin"
+                      />
+                    )}
+                    <Typography variant="caption" color="text.secondary">
+                      {report.timestamp ? new Date(report.timestamp).toLocaleString() : 'No timestamp'}
+                    </Typography>
+                  </Box>
+
+                  <Box display="flex" gap={1}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<LocationOn />}
+                      onClick={() => zoomToLocation(report.location?.latitude || 0, report.location?.longitude || 0)}
+                      sx={{
+                        borderColor: alpha(theme.palette.secondary.main, 0.5),
+                        color: theme.palette.secondary.main,
+                        '&:hover': {
+                          borderColor: theme.palette.secondary.main,
+                          backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                        }
+                      }}
                     >
+                      View on Map
+                    </Button>
+                    {canUpdate && (
                       <Button
-                        variant="contained"
+                        variant="outlined"
                         size="small"
-                        onClick={() => handleEdit(selectedReport)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        onClick={() => handleVerifybyAdmin(selectedReport._id)}
-                      >
-                        Verify
-                      </Button>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        onClick={() => {
-                          if (selectedReport?._id) {
-                            handleDelete(selectedReport._id);
-                          } else {
-                            console.warn("Missing report ID, cannot delete");
+                        startIcon={<EditIcon />}
+                        onClick={() => handleEdit(report)}
+                        sx={{
+                          borderColor: alpha(theme.palette.primary.main, 0.5),
+                          color: theme.palette.primary.main,
+                          '&:hover': {
+                            borderColor: theme.palette.primary.main,
+                            backgroundColor: alpha(theme.palette.primary.main, 0.1),
                           }
                         }}
                       >
-                        Resolved
+                        Edit
                       </Button>
-                    </Box>
+                    )}
+                    {canDelete && (
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => handleDelete(report._id)}
+                        sx={{
+                          borderColor: alpha(theme.palette.error.main, 0.5),
+                          color: theme.palette.error.main,
+                          '&:hover': {
+                            borderColor: theme.palette.error.main,
+                            backgroundColor: alpha(theme.palette.error.main, 0.1),
+                          }
+                        }}
+                      >
+                        Archive
+                      </Button>
+                    )}
                   </Box>
-                </InfoBox>
-              )}
-            </GoogleMap>
-          </Box>
-        </Paper>
+                </Box>
+              ))}
+            </Box>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={8}>
+          <Paper 
+            elevation={0}
+            sx={{ 
+              p: 3,
+              borderRadius: 2,
+              backgroundColor: theme.palette.background.paper,
+              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            }}
+          >
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6" color="text.primary" fontWeight="bold">
+                Live Map View - Auto Updates Every 10s
+              </Typography>
+            </Box>
+            <Divider sx={{ mb: 3 }} />
+            
+            {/* Debug Info */}
+            <Box mb={2} p={2} sx={{ backgroundColor: alpha(theme.palette.info.main, 0.1), borderRadius: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Debug Info:</strong> Total Reports: {reportsData?.length || 0} | 
+                Active Reports: {(reportsData || []).filter((r) => r && r.archived !== true).length} | 
+                Markers: {markersData?.length || 0} |
+                With Coordinates: {markersData.filter((r) => r.location?.latitude && r.location?.longitude).length} |
+                Map Loaded: {isLoaded ? 'Yes' : 'No'} |
+                Map Ref: {mapRef.current ? 'Set' : 'Not Set'} |
+                Last Update: {new Date().toLocaleTimeString()}
+              </Typography>
+              {markersData.slice(0, 3).map((report, index) => (
+                <Typography key={index} variant="caption" color="text.secondary" display="block">
+                  Report {index + 1}: {report.reportType} - Lat: {report.location?.latitude || 'N/A'} - Lng: {report.location?.longitude || 'N/A'}
+                </Typography>
+              ))}
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                <strong>Test:</strong> Look for the test marker at center of map (14.7006, 120.9836). If you see it, the map is working.
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block">
+                <strong>Map Status:</strong> {isLoaded ? '✅ Loaded' : '❌ Loading...'} | 
+                <strong> Reports:</strong> {(reportsData || []).length} | 
+                <strong> With Coords:</strong> {(reportsData || []).filter((r) => r && r.archived !== true && r.location?.latitude && r.location?.longitude).length}
+              </Typography>
+            </Box>
+            {!isLoaded ? (
+              <Box 
+                display="flex" 
+                justifyContent="center" 
+                alignItems="center" 
+                height="400px"
+                flexDirection="column"
+                gap={2}
+                sx={{ backgroundColor: alpha(theme.palette.info.main, 0.1), borderRadius: 2 }}
+              >
+                <CircularProgress />
+                <Typography variant="body2" color="text.secondary">
+                  Loading Google Maps...
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  API Key: {process.env.REACT_APP_GOOGLE_MAPS_API_KEY ? '✅ Set' : '❌ Missing'}
+                </Typography>
+              </Box>
+            ) : (
+              <Box 
+                data-map-container
+                sx={{ height: "80vh", borderRadius: 2, overflow: 'hidden' }}
+              >
+                <GoogleMap
+                  center={defaultCenter}
+                  zoom={12}
+                  mapContainerStyle={{ height: "100%", width: "100%" }}
+                  onLoad={(map) => {
+                    mapRef.current = map;
+                    console.log("🗺️ Google Map loaded successfully");
+                    // Trigger resize after map loads
+                    setTimeout(() => {
+                      if (window.google && map) {
+                        window.google.maps.event.trigger(map, 'resize');
+                      }
+                    }, 100);
+                  }}
+                  options={{
+                    mapTypeControl: true,
+                    streetViewControl: true,
+                    fullscreenControl: true,
+                    zoomControl: true,
+                  }}
+                >
+                  {/* Traffic Layer */}
+                  <TrafficLayer />
+                  
+                  {/* Test Marker - Always show this to verify map is working */}
+                  <Marker
+                    position={{ lat: 14.7006, lng: 120.9836 }}
+                    title="Test Marker - Map is working"
+                    onClick={() => console.log("✅ Test marker clicked - map is working!")}
+                  />
+                  
+                  {/* Simple Test Marker with default icon */}
+                  <Marker
+                    position={{ lat: 14.7006, lng: 120.9846 }}
+                    title="Simple Test Marker"
+                    onClick={() => console.log("✅ Simple test marker clicked!")}
+                  />
+                  
+                  {/* Render markers using Gas Stations pattern - updates every 10 seconds */}
+                  {markersData.map((report) => (
+                    <Marker
+                      key={report._id}
+                      position={{
+                        lat: report.location?.latitude || 0,
+                        lng: report.location?.longitude || 0,
+                      }}
+                      title={`${report.reportType} - ${report.description}`}
+                      icon={getReportIcon(report.reportType)}
+                      onClick={() => setSelectedReport(report)}
+                      onDblClick={() => zoomToLocation(report.location?.latitude || 0, report.location?.longitude || 0)}
+                    />
+                  ))}
+
+                  {selectedReport && (
+                    <InfoBox
+                      position={{
+                        lat: selectedReport.location?.latitude || 0,
+                        lng: selectedReport.location?.longitude || 0,
+                      }}
+                      options={{
+                        closeBoxURL: "", // hides the default X
+                        enableEventPropagation: true,
+                      }}
+                      onCloseClick={() => setSelectedReport(null)}
+                    >
+                      <div
+                        style={{
+                          backgroundColor: "white",
+                          padding: "12px",
+                          borderRadius: "8px",
+                          boxShadow: "0px 2px 6px rgba(0,0,0,0.3)",
+                          minWidth: "200px",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <h3 style={{ margin: 0 }}>{selectedReport.reportType}</h3>
+                          <span
+                            style={{ cursor: "pointer", fontWeight: "bold", color: "#555" }}
+                            onClick={() => setSelectedReport(null)}
+                          >
+                            ✕
+                          </span>
+                        </div>
+
+                        {/* Report Details */}
+                        <p style={{ margin: "4px 0" }}>{selectedReport.address || 'No address'}</p>
+                        <p style={{ margin: "4px 0" }}>
+                          {selectedReport.description || 'No description'}
+                        </p>
+                        <p style={{ margin: "4px 0" }}>
+                          Time: {selectedReport.timestamp ? new Date(selectedReport.timestamp).toLocaleString() : 'N/A'}
+                        </p>
+                        <p style={{ margin: "4px 0" }}>
+                          Verified: {selectedReport.verified?.verifiedByAdmin === 1 ? 'Yes' : 'No'}
+                        </p>
+
+                        {/* Action Buttons */}
+                        <div style={{ marginTop: "8px", display: "flex", gap: "8px" }}>
+                          <button
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: "6px",
+                              border: "none",
+                              backgroundColor: "#1976d2",
+                              color: "white",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => handleEdit(selectedReport)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: "6px",
+                              border: "none",
+                              backgroundColor: "#4caf50",
+                              color: "white",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => handleVerifybyAdmin(selectedReport._id)}
+                          >
+                            Verify
+                          </button>
+                          <button
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: "6px",
+                              border: "none",
+                              backgroundColor: "#f44336",
+                              color: "white",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => {
+                              if (selectedReport?._id) {
+                                handleDelete(selectedReport._id);
+                              }
+                            }}
+                          >
+                            Archive
+                          </button>
+                        </div>
+                      </div>
+                    </InfoBox>
+                  )}
+                </GoogleMap>
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+      </Grid>
       )}
 
       {/* Reports Table */}

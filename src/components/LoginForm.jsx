@@ -19,21 +19,39 @@ import {
   InputLabel,
   Divider,
 } from "@mui/material";
-import { PersonAdd, Login } from "@mui/icons-material";
+import { PersonAdd, Login, Security, AdminPanelSettings, Visibility } from "@mui/icons-material";
 import { useDispatch } from "react-redux";
 import { setLogin } from "state";
-import { adminAuthService } from "../services/adminAuthService";
+import { useAdminAuth } from "contexts/AdminAuthContext";
 import { adminService } from "../services/adminService";
 
 const LoginForm = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
+  const { login, isAuthenticated } = useAdminAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Check if user is already authenticated and redirect
+  useEffect(() => {
+    console.log('🔍 LOGIN FORM - isAuthenticated changed:', {
+      isAuthenticated,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (isAuthenticated) {
+      console.log('🔄 LOGIN FORM - User authenticated, redirecting to overview...');
+      // Add a small delay to ensure Redux state is updated
+      setTimeout(() => {
+        console.log('🔄 LOGIN FORM - Executing redirect after delay...');
+        window.location.href = '/overview';
+      }, 100);
+    }
+  }, [isAuthenticated]);
 
   // Console logging for debugging - only log on significant state changes
   if (isLoading || error) {
@@ -54,11 +72,21 @@ const LoginForm = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "admin",
+    role: "",
+    selectedRole: null, // Store the complete role object
   });
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [accountError, setAccountError] = useState("");
   const [accountSuccess, setAccountSuccess] = useState("");
+  
+  // Role fetching state
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [isLoadingRoles, setIsLoadingRoles] = useState(false);
+  const [rolesError, setRolesError] = useState("");
+  
+  // Setup status state
+  const [setupNeeded, setSetupNeeded] = useState(null);
+  const [isCheckingSetup, setIsCheckingSetup] = useState(false);
 
   // Console logging for admin account dialog state - only log when dialog is open or has activity
   if (isAddAccountOpen || isCreatingAccount || accountError || accountSuccess) {
@@ -102,17 +130,141 @@ const LoginForm = () => {
       timestamp: new Date().toISOString()
     });
     
-    setAccountFormData({
-      ...accountFormData,
-      [e.target.name]: e.target.value,
-    });
+    // If role is being changed, find and store the complete role object
+    if (e.target.name === 'role') {
+      const selectedRole = availableRoles.find(role => 
+        (role.name || role._id) === e.target.value
+      );
+      
+      console.log('🔍 ROLE SELECTION - Complete Role Object:', {
+        selectedValue: e.target.value,
+        foundRole: selectedRole,
+        roleId: selectedRole?._id,
+        roleName: selectedRole?.name,
+        displayName: selectedRole?.displayName
+      });
+      
+      setAccountFormData({
+        ...accountFormData,
+        [e.target.name]: e.target.value,
+        selectedRole: selectedRole || null
+      });
+    } else {
+      setAccountFormData({
+        ...accountFormData,
+        [e.target.name]: e.target.value,
+      });
+    }
   };
 
-  const handleAddAccount = () => {
-    console.log('🚀 ADMIN ACCOUNT - Opening Add Account Dialog:', {
-      timestamp: new Date().toISOString(),
-      action: 'OPEN_DIALOG'
-    });
+  // Check if setup is needed
+  const checkSetupStatus = async () => {
+    try {
+      setIsCheckingSetup(true);
+      console.log('🔍 SETUP STATUS - Checking if first admin setup is needed...');
+      
+      let response;
+      try {
+        response = await fetch('https://ts-backend-1-jyit.onrender.com/api/setup/status', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+      } catch (error) {
+        console.log('⚠️ SETUP STATUS - Setup endpoint not available, assuming setup not needed');
+        setSetupNeeded(false);
+        return;
+      }
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔍 SETUP STATUS RESPONSE:', data);
+        
+        if (data.success && data.data) {
+          setSetupNeeded(data.data.setupNeeded);
+          console.log('✅ SETUP STATUS - Setup needed:', data.data.setupNeeded);
+        } else {
+          console.log('❌ SETUP STATUS - Invalid response format:', data);
+          setSetupNeeded(false); // Default to not needed if we can't determine
+        }
+      } else {
+        console.log('❌ SETUP STATUS - HTTP Error:', response.status, response.statusText);
+        setSetupNeeded(false); // Default to not needed if we can't check
+      }
+    } catch (error) {
+      console.log('❌ SETUP STATUS - Error:', error.message);
+      setSetupNeeded(false); // Default to not needed if error
+    } finally {
+      setIsCheckingSetup(false);
+    }
+  };
+
+  // Fetch available roles from backend
+  const fetchAvailableRoles = async () => {
+    try {
+      setIsLoadingRoles(true);
+      setRolesError("");
+      
+      console.log('🔄 FETCHING ROLES - Getting available roles from public endpoint...');
+      
+      // Try setup roles endpoint first, fallback to admin-management/roles
+      let response;
+      try {
+        response = await fetch('https://ts-backend-1-jyit.onrender.com/api/setup/roles', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+      } catch (error) {
+        console.log('⚠️ SETUP ROLES - Setup endpoint not available, trying admin-management/roles');
+        response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/roles', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+      }
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔍 ROLES RESPONSE DEBUG:', {
+          success: data.success,
+          hasData: !!data.data,
+          hasRoles: !!data.data?.roles,
+          rolesLength: data.data?.roles?.length,
+          roles: data.data?.roles
+        });
+        
+        if (data.success && data.data && data.data.roles) {
+          console.log('✅ ROLES FETCHED - Available roles:', data.data.roles);
+          setAvailableRoles(data.data.roles);
+        } else {
+          console.log('❌ ROLES RESPONSE INVALID:', data);
+          throw new Error('Invalid response format');
+        }
+      } else {
+        console.log('❌ ROLES HTTP ERROR:', response.status, response.statusText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('❌ FETCH ROLES ERROR:', error);
+      setRolesError('Failed to load roles');
+      setAvailableRoles([]);
+    } finally {
+      setIsLoadingRoles(false);
+    }
+  };
+
+  const handleAddAccount = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Check setup status first
+    await checkSetupStatus();
     
     setIsAddAccountOpen(true);
     setAccountError("");
@@ -123,8 +275,13 @@ const LoginForm = () => {
       email: "",
       password: "",
       confirmPassword: "",
-      role: "admin",
+      role: "",
+      selectedRole: null,
     });
+    
+    // Fetch roles when dialog opens
+    console.log('🔍 HANDLE ADD ACCOUNT - About to fetch roles');
+    fetchAvailableRoles();
   };
 
   const handleCreateAccount = async (e) => {
@@ -150,8 +307,59 @@ const LoginForm = () => {
     console.log('🔍 ADMIN ACCOUNT - Validation Check:', {
       passwordMatch: accountFormData.password === accountFormData.confirmPassword,
       passwordLength: accountFormData.password.length,
-      minLengthRequired: 6
+      minLengthRequired: 6,
+      firstName: accountFormData.firstName,
+      lastName: accountFormData.lastName,
+      email: accountFormData.email,
+      role: accountFormData.role
     });
+
+    // Check required fields
+    if (!accountFormData.firstName.trim()) {
+      console.log('❌ ADMIN ACCOUNT - Validation Failed: First name is required');
+      setAccountError("First name is required");
+      setIsCreatingAccount(false);
+      return;
+    }
+
+    if (!accountFormData.lastName.trim()) {
+      console.log('❌ ADMIN ACCOUNT - Validation Failed: Last name is required');
+      setAccountError("Last name is required");
+      setIsCreatingAccount(false);
+      return;
+    }
+
+    if (!accountFormData.email.trim()) {
+      console.log('❌ ADMIN ACCOUNT - Validation Failed: Email is required');
+      setAccountError("Email is required");
+      setIsCreatingAccount(false);
+      return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(accountFormData.email)) {
+      console.log('❌ ADMIN ACCOUNT - Validation Failed: Invalid email format');
+      setAccountError("Please enter a valid email address");
+      setIsCreatingAccount(false);
+      return;
+    }
+
+    if (!accountFormData.role) {
+      console.log('❌ ADMIN ACCOUNT - Validation Failed: Role is required');
+      setAccountError("Please select a role");
+      setIsCreatingAccount(false);
+      return;
+    }
+
+    // Validate role value
+    const validRoles = availableRoles.map(role => role.name || role._id);
+    if (!validRoles.includes(accountFormData.role)) {
+      console.log('❌ ADMIN ACCOUNT - Validation Failed: Invalid role selected');
+      setAccountError("Please select a valid role");
+      setIsCreatingAccount(false);
+      return;
+    }
 
     if (accountFormData.password !== accountFormData.confirmPassword) {
       console.log('❌ ADMIN ACCOUNT - Validation Failed: Passwords do not match');
@@ -172,20 +380,88 @@ const LoginForm = () => {
     try {
       console.log('🔄 ADMIN ACCOUNT - Calling Admin Creation API...');
       
-      // Use adminService for creating admin account
+      // Use the complete role object that was selected
+      const selectedRole = accountFormData.selectedRole;
+      
+      console.log('🔍 USING SELECTED ROLE OBJECT:', {
+        selectedRole: selectedRole,
+        roleId: selectedRole?._id,
+        roleName: selectedRole?.name,
+        displayName: selectedRole?.displayName,
+        permissions: selectedRole?.permissions
+      });
+      
+      // Backend now uses direct role field (super_admin, admin, moderator)
+      // Passwords are sent as plain text - backend will hash them automatically
       const adminData = {
-        firstName: accountFormData.firstName,
-        lastName: accountFormData.lastName,
-        email: accountFormData.email,
-        password: accountFormData.password,
-        role: accountFormData.role
+        firstName: accountFormData.firstName.trim(),
+        lastName: accountFormData.lastName.trim(),
+        email: accountFormData.email.trim().toLowerCase(),
+        password: accountFormData.password, // Plain text - backend will hash
+        role: accountFormData.role // Direct role field (super_admin, admin, moderator)
       };
       
-      // No authentication required - use regular admin creation
-      console.log('👤 ADMIN ACCOUNT - Creating Admin (No Auth Required)');
-      const response = await adminService.createAdmin(adminData);
+      // Validate that we have a valid role
+      if (!adminData.role) {
+        console.log('❌ ADMIN ACCOUNT - No valid role selected');
+        setAccountError("Please select a valid role");
+        setIsCreatingAccount(false);
+        return;
+      }
       
-      if (response.success) {
+      console.log('🔍 ADMIN ACCOUNT - Data being sent to API:', {
+        ...adminData,
+        password: '[HIDDEN]' // Don't log password
+      });
+      
+      // Try setup first-admin endpoint first, fallback to admin-management/
+      let response;
+      let endpoint = '/setup/first-admin';
+      
+      try {
+        console.log('🔍 API CALL DETAILS:', {
+          endpoint: '/setup/first-admin',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(adminData),
+          fullUrl: 'https://ts-backend-1-jyit.onrender.com/api/setup/first-admin'
+        });
+        
+        console.log('👤 ADMIN ACCOUNT - Creating First Admin with setup endpoint');
+        
+        response = await fetch('https://ts-backend-1-jyit.onrender.com/api/setup/first-admin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(adminData)
+        });
+      } catch (error) {
+        console.log('⚠️ SETUP FIRST-ADMIN - Setup endpoint not available, trying admin-management/');
+        endpoint = '/admin-management/';
+        
+        response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(adminData)
+        });
+      }
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (response.status === 400 && errorData.message?.includes('already exist')) {
+          throw new Error('Admin accounts already exist. Please log in first, then create additional admin accounts from the Admin Management page.');
+        }
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
         console.log('✅ ADMIN ACCOUNT - Account Created Successfully:', {
           timestamp: new Date().toISOString(),
           accountData: {
@@ -193,21 +469,23 @@ const LoginForm = () => {
             lastName: accountFormData.lastName,
             email: accountFormData.email,
             role: accountFormData.role
-          }
+          },
+          response: result.data
         });
         
-        setAccountSuccess("Admin account created successfully!");
+        const roleName = accountFormData.role;
+        setAccountSuccess(`Admin account created successfully! ${accountFormData.firstName} ${accountFormData.lastName} (${roleName}) can now log in.`);
         setTimeout(() => {
           console.log('🔄 ADMIN ACCOUNT - Closing Dialog');
           setIsAddAccountOpen(false);
           setAccountSuccess("");
-        }, 2000);
+        }, 3000);
       } else {
         console.log('❌ ADMIN ACCOUNT - Creation Failed:', {
-          error: response.error,
+          error: result.message,
           timestamp: new Date().toISOString()
         });
-        setAccountError(response.error || "Failed to create admin account. Please try again.");
+        setAccountError(result.message || "Failed to create admin account. Please try again.");
       }
       
     } catch (err) {
@@ -218,17 +496,25 @@ const LoginForm = () => {
         timestamp: new Date().toISOString()
       });
       
-      // More specific error handling
+      // More specific error handling based on backend responses
       if (err.message.includes('401')) {
         setAccountError("Authentication failed. Please log in again.");
       } else if (err.message.includes('400')) {
-        setAccountError("Invalid data provided. Please check all fields.");
+        if (err.message.includes('Invalid role specified')) {
+          setAccountError("Invalid role selected. Please select a valid role from the list.");
+        } else if (err.message.includes('already exists')) {
+          setAccountError("An admin with this email already exists. Please use a different email.");
+        } else {
+          setAccountError("Invalid data provided. Please check all fields are filled correctly.");
+        }
       } else if (err.message.includes('409')) {
-        setAccountError("An admin with this email already exists.");
+        setAccountError("An admin with this email already exists. Please use a different email.");
       } else if (err.message.includes('500')) {
         setAccountError("Server error. Please try again later.");
       } else if (err.message.includes('NetworkError') || err.message.includes('fetch')) {
         setAccountError("Network error. Please check your connection and try again.");
+      } else if (err.message.includes('Invalid data provided')) {
+        setAccountError("Please ensure all fields are filled correctly and email format is valid.");
       } else {
         setAccountError(`Account creation failed: ${err.message}`);
       }
@@ -247,130 +533,44 @@ const LoginForm = () => {
       action: 'LOGIN_ATTEMPT'
     });
     
-    console.log('🔍 LOGIN FORM - Current State Before Login:', {
-      formData,
-      isLoading,
-      error
-    });
-    
     setIsLoading(true);
     setError("");
 
     try {
-      console.log('🔍 LOGIN - Validating Credentials:', {
-        providedEmail: formData.email,
-        providedPassword: formData.password,
-        expectedEmail: "admin@trafficslight.com",
-        expectedPassword: "admin123"
-      });
-
-      // Try real backend authentication first, fallback to mock if backend is not available
-      try {
-        const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password
-          })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          
-          if (data.success) {
-            console.log('✅ LOGIN - Backend Authentication Successful:', {
-              timestamp: new Date().toISOString(),
-              user: data.data.admin,
-              token: data.data.token
-            });
-
-            dispatch(setLogin({
-              user: data.data.admin,
-              token: data.data.token,
-            }));
-
-            console.log('🎉 LOGIN - Login Successful, User Authenticated');
-            return; // Exit early on success
-          }
-        }
-      } catch (backendError) {
-        console.log('⚠️ LOGIN - Backend not available, using mock authentication:', backendError.message);
-      }
-
-      // Fallback to mock authentication if backend is not available
-      console.log('🔄 LOGIN - Using mock authentication as fallback');
+      const result = await login(formData.email, formData.password);
       
-      // Validate credentials for mock authentication
-      if (formData.email === "admin@trafficslight.com" && formData.password === "admin123") {
-        const mockResponse = {
-          success: true,
-          data: {
-            token: 'mock_admin_token_' + Date.now(),
-            admin: {
-              id: '1',
-              firstName: 'Admin',
-              lastName: 'User',
-              email: formData.email,
-              role: {
-                name: 'super_admin',
-                displayName: 'Super Administrator',
-                permissions: {
-                  canCreate: true,
-                  canRead: true,
-                  canUpdate: true,
-                  canDelete: true,
-                  canManageAdmins: true,
-                  canAssignRoles: true,
-                  canManageUsers: true,
-                  canManageReports: true,
-                  canManageTrips: true,
-                  canManageGasStations: true,
-                  canViewAnalytics: true,
-                  canExportData: true,
-                  canManageSettings: true
-                }
-              },
-              isActive: true,
-              lastLogin: new Date().toISOString()
-            }
-          }
-        };
-
-        console.log('✅ LOGIN - Mock Authentication Successful:', {
+      if (result.success) {
+        console.log('✅ LOGIN - Authentication Successful:', {
           timestamp: new Date().toISOString(),
-          user: mockResponse.data.admin,
-          token: mockResponse.data.token
+          user: result.data?.admin
         });
-
+        
+        // Dispatch login action for Redux state
         dispatch(setLogin({
-          user: mockResponse.data.admin,
-          token: mockResponse.data.token,
+          user: result.data?.admin,
+          token: localStorage.getItem('adminToken')
         }));
 
-        console.log('🎉 LOGIN - Mock Login Successful, User Authenticated');
-      } else {
-        console.log('❌ LOGIN - Invalid Credentials:', {
-          providedEmail: formData.email,
-          providedPassword: formData.password
+        console.log('🎉 LOGIN - Login Process Completed Successfully');
+        console.log('🔍 LOGIN - Redux state updated:', {
+          user: result.data?.admin,
+          token: localStorage.getItem('adminToken'),
+          timestamp: new Date().toISOString()
         });
-        setError("Invalid email or password");
-      }
-    } catch (err) {
-      console.log('❌ LOGIN - Login Failed with Error:', {
-        error: err.message,
-        timestamp: new Date().toISOString()
-      });
-      
-      if (err.name === 'TypeError' && err.message.includes('fetch')) {
-        setError("Network error. Please check your connection and try again.");
+        
+        // The redirect will be handled by the useEffect hook when isAuthenticated becomes true
+        console.log('🔄 LOGIN - Waiting for authentication state to update...');
       } else {
-        setError("Login failed. Please try again.");
+        console.log('❌ LOGIN - Authentication Failed:', {
+          timestamp: new Date().toISOString(),
+          error: result.error
+        });
+        setError(result.error || 'Login failed');
       }
+    } catch (error) {
+      console.error('❌ LOGIN - Login Process Failed:', error);
+      setError('Login failed. Please try again.');
     } finally {
-      console.log('🔄 LOGIN - Login Process Complete, Setting Loading to False');
       setIsLoading(false);
     }
   };
@@ -478,6 +678,7 @@ const LoginForm = () => {
         <Button
           fullWidth
           variant="outlined"
+          type="button"
           onClick={handleAddAccount}
           startIcon={<PersonAdd />}
           sx={{
@@ -492,18 +693,16 @@ const LoginForm = () => {
         >
           Add Admin Account
         </Button>
-
-        <Box mt={3} p={2} sx={{ backgroundColor: alpha(theme.palette.info.main, 0.1), borderRadius: 2 }}>
+        
+        <Box mt={2} p={2} sx={{ backgroundColor: alpha(theme.palette.warning.main, 0.1), borderRadius: 2 }}>
           <Typography variant="caption" color="text.secondary" display="block">
-            Demo Credentials:
+            ⚠️ Note: Admin creation requires authentication
           </Typography>
           <Typography variant="body2" color="text.primary" fontWeight="medium">
-            Email: admin@trafficslight.com
-          </Typography>
-          <Typography variant="body2" color="text.primary" fontWeight="medium">
-            Password: admin123
+            You need to be logged in to create admin accounts
           </Typography>
         </Box>
+
       </Paper>
 
       {/* Add Account Dialog */}
@@ -516,8 +715,24 @@ const LoginForm = () => {
         <DialogTitle>
           <Box display="flex" alignItems="center" gap={1}>
             <PersonAdd color="primary" />
-            <Typography variant="h6">Create Admin Account</Typography>
+            <Typography variant="h6">
+              {setupNeeded === true ? 'Create First Admin Account' : 'Create Admin Account'}
+            </Typography>
           </Box>
+          {setupNeeded === true && (
+            <Box mt={1}>
+              <Typography variant="body2" color="primary" fontWeight="medium">
+                🎯 First admin setup - No authentication required
+              </Typography>
+            </Box>
+          )}
+          {setupNeeded === false && (
+            <Box mt={1}>
+              <Typography variant="body2" color="warning.main" fontWeight="medium">
+                ⚠️ Admin accounts exist - Authentication required
+              </Typography>
+            </Box>
+          )}
         </DialogTitle>
         
         <DialogContent>
@@ -574,13 +789,119 @@ const LoginForm = () => {
                 value={accountFormData.role}
                 onChange={handleAccountFormChange}
                 label="Role"
-                disabled={isCreatingAccount}
+                disabled={isCreatingAccount || isLoadingRoles}
+                required
               >
-                <MenuItem value="super_admin">Super Administrator</MenuItem>
-                <MenuItem value="admin">Administrator</MenuItem>
-                <MenuItem value="viewer">Viewer</MenuItem>
+                {isLoadingRoles ? (
+                  <MenuItem disabled>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CircularProgress size={20} />
+                      <Typography>Loading roles...</Typography>
+                    </Box>
+                  </MenuItem>
+                ) : (() => {
+                  console.log('🔍 ROLE SELECTION DEBUG:', {
+                    availableRoles,
+                    length: availableRoles.length,
+                    isLoadingRoles,
+                    rolesError
+                  });
+                  return availableRoles.length > 0;
+                })() ? (
+                  availableRoles.map((role) => {
+                    console.log('🔍 RENDERING ROLE:', role);
+                    const roleName = role.name || role._id;
+                    const displayName = role.displayName || role.name || role._id;
+                    const description = role.description || role.permissions?.description || 'No description available';
+                    
+                    // Get appropriate icon based on role name
+                    const getRoleIcon = (roleName) => {
+                      if (roleName.includes('super') || roleName.includes('admin')) return <Security color="primary" />;
+                      if (roleName.includes('admin')) return <AdminPanelSettings color="primary" />;
+                      return <Visibility color="primary" />;
+                    };
+                    
+                    return (
+                      <MenuItem key={role._id || roleName} value={roleName}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                          {getRoleIcon(roleName)}
+                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1 }}>
+                            <Typography variant="body1" fontWeight="medium">
+                              {displayName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {description}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </MenuItem>
+                    );
+                  })
+                ) : (
+                  <MenuItem disabled>
+                    <Typography color="text.secondary">No roles available</Typography>
+                  </MenuItem>
+                )}
               </Select>
+              {rolesError && (
+                <Typography variant="caption" color="error" sx={{ mt: 1 }}>
+                  {rolesError}
+                </Typography>
+              )}
             </FormControl>
+
+            {/* Role Information Display */}
+            {accountFormData.selectedRole && (() => {
+              const selectedRole = accountFormData.selectedRole;
+              
+              if (!selectedRole) return null;
+              
+              const displayName = selectedRole.displayName || selectedRole.name || selectedRole._id;
+              const description = selectedRole.description || 'No description available';
+              const permissions = selectedRole.permissions || {};
+              
+              // Get appropriate icon
+              const getRoleIcon = (roleName) => {
+                if (roleName.includes('super')) return <Security color="primary" />;
+                if (roleName.includes('admin')) return <AdminPanelSettings color="primary" />;
+                return <Visibility color="primary" />;
+              };
+              
+              // Format permissions
+              const formatPermissions = (perms) => {
+                const permList = [];
+                if (perms.canCreate) permList.push('Create');
+                if (perms.canRead) permList.push('Read');
+                if (perms.canUpdate) permList.push('Update');
+                if (perms.canDelete) permList.push('Delete');
+                if (perms.canManageAdmins) permList.push('Manage Admins');
+                if (perms.canAssignRoles) permList.push('Assign Roles');
+                return permList.length > 0 ? permList.join(', ') : 'Read only';
+              };
+              
+              return (
+                <Box sx={{ 
+                  p: 2, 
+                  mb: 2, 
+                  backgroundColor: theme.palette.background.default,
+                  borderRadius: 1,
+                  border: `1px solid ${theme.palette.divider}`
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    {getRoleIcon(accountFormData.role)}
+                    <Typography variant="subtitle2" fontWeight="medium">
+                      Selected Role: {displayName}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {description}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Permissions: {formatPermissions(permissions)}
+                  </Typography>
+                </Box>
+              );
+            })()}
 
             <TextField
               fullWidth
@@ -610,30 +931,20 @@ const LoginForm = () => {
 
         <DialogActions sx={{ p: 2 }}>
           <Button 
+            type="button"
             onClick={() => setIsAddAccountOpen(false)}
             disabled={isCreatingAccount}
           >
             Cancel
           </Button>
           <Button
+            type="button"
             onClick={handleCreateAccount}
             variant="contained"
             disabled={isCreatingAccount}
             startIcon={isCreatingAccount ? <CircularProgress size={20} /> : <PersonAdd />}
           >
-            {isCreatingAccount ? "Creating..." : "Create Account"}
-          </Button>
-          <Button
-            onClick={() => {
-              console.log('🔍 DEBUG - Current Form Data:', accountFormData);
-              console.log('🔍 DEBUG - No Authentication Required');
-              console.log('🔍 DEBUG - Using Regular Admin Creation Endpoint');
-            }}
-            variant="outlined"
-            size="small"
-            sx={{ ml: 1 }}
-          >
-            Debug
+            {isCreatingAccount ? "Creating..." : (setupNeeded === true ? "Create First Admin" : "Create Account")}
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,6 +1,7 @@
 // Admin service for comprehensive admin management
 // Aligned with backend AdminController endpoints
 import { apiService } from './apiService';
+import API_CONFIG from '../config/api';
 
 export const adminService = {
   // Get all admins
@@ -12,7 +13,7 @@ export const adminService = {
         ...filters
       });
       
-      return await apiService.get(`/admin-management/admins?${params}`);
+      return await apiService.get(`/admin-management?${params}`);
     } catch (error) {
       console.error('Get admins error:', error);
       throw error;
@@ -22,7 +23,7 @@ export const adminService = {
   // Get admin by ID
   async getAdmin(id) {
     try {
-      return await apiService.get(`/admin-management/admins/${id}`);
+      return await apiService.get(`/admin-management/${id}`);
     } catch (error) {
       console.error('Get admin error:', error);
       throw error;
@@ -32,7 +33,7 @@ export const adminService = {
   // Create admin
   async createAdmin(adminData) {
     try {
-      return await apiService.post('/admin-management/admins', adminData);
+      return await apiService.post('/admin-management', adminData);
     } catch (error) {
       console.error('Create admin error:', error);
       throw error;
@@ -43,7 +44,7 @@ export const adminService = {
   // Update admin
   async updateAdmin(id, adminData) {
     try {
-      return await apiService.put(`/admin-management/admins/${id}`, adminData);
+      return await apiService.put(`/admin-management/${id}`, adminData);
     } catch (error) {
       console.error('Update admin error:', error);
       throw error;
@@ -53,7 +54,7 @@ export const adminService = {
   // Delete admin
   async deleteAdmin(id) {
     try {
-      return await apiService.delete(`/admin-management/admins/${id}`);
+      return await apiService.delete(`/admin-management/${id}`);
     } catch (error) {
       console.error('Delete admin error:', error);
       throw error;
@@ -93,7 +94,7 @@ export const adminService = {
   // Get admin roles
   async getAdminRoles() {
     try {
-      return await apiService.get('/admin-management/admin-roles');
+      return await apiService.get('/admin-management/roles');
     } catch (error) {
       console.error('Get admin roles error:', error);
       throw error;
@@ -103,7 +104,7 @@ export const adminService = {
   // Create admin role
   async createAdminRole(roleData) {
     try {
-      return await apiService.post('/admin-management/admin-roles', roleData);
+      return await apiService.post('/admin-management/roles', roleData);
     } catch (error) {
       console.error('Create admin role error:', error);
       throw error;
@@ -111,9 +112,9 @@ export const adminService = {
   },
 
   // Update admin role
-  async updateAdminRole(roleId, roleData) {
+  async updateAdminRoleById(roleId, roleData) {
     try {
-      return await apiService.put(`/admin-management/admin-roles/${roleId}`, roleData);
+      return await apiService.put(`/admin-management/roles/${roleId}`, roleData);
     } catch (error) {
       console.error('Update admin role error:', error);
       throw error;
@@ -123,7 +124,7 @@ export const adminService = {
   // Delete admin role
   async deleteAdminRole(roleId) {
     try {
-      return await apiService.delete(`/admin-management/admin-roles/${roleId}`);
+      return await apiService.delete(`/admin-management/roles/${roleId}`);
     } catch (error) {
       console.error('Delete admin role error:', error);
       throw error;
@@ -165,7 +166,7 @@ export const adminService = {
   // Get admin statistics
   async getAdminStatistics() {
     try {
-      return await apiService.get('/admin-management/statistics');
+      return await apiService.get('/admin-management/stats');
     } catch (error) {
       console.error('Get admin statistics error:', error);
       throw error;
@@ -278,7 +279,7 @@ export const adminService = {
   // Get admin dashboard
   async getAdminDashboard() {
     try {
-      return await apiService.get('/admin-management/dashboard');
+      return await apiService.get('/admin-dashboard');
     } catch (error) {
       console.error('Get admin dashboard error:', error);
       throw error;

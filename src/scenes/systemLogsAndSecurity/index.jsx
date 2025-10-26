@@ -40,7 +40,7 @@ const SystemLogsAndSecurity = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {events.map((event) => (
+                {(events || []).map((event) => (
                   <TableRow key={event.eventNo}>
                     <TableCell>{event.eventNo}</TableCell>
                     <TableCell>{event.name}</TableCell>

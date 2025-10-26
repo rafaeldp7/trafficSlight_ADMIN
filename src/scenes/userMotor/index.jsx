@@ -24,7 +24,7 @@ import FlexBetween from "components/FlexBetween";
 
 const UserMotor = () => {
   const theme = useTheme();
-  const API_URL = "https://ts-backend-1-jyit.onrender.com/api/user-motors";
+  const API_URL = "https://ts-backend-1-jyit.onrender.com/api/admin-motors";
 
   const [userMotors, setUserMotors] = useState([]);
   const [search, setSearch] = useState("");
@@ -38,17 +38,39 @@ const UserMotor = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  // Fetch data when component mounts
   useEffect(() => {
     fetchMotors();
-  }, []);
+  }, []); // Empty dependency array - only runs once
 
   const fetchMotors = async () => {
     try {
-      const res = await fetch(API_URL);
+      const token = localStorage.getItem('adminToken');
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(API_URL, { headers });
       const data = await res.json();
-      setUserMotors(data);
+      
+      // Handle structured response from backend
+      if (data.success && data.data && data.data.motors) {
+        setUserMotors(data.data.motors);
+      } else if (data.success && data.data && Array.isArray(data.data)) {
+        setUserMotors(data.data);
+      } else if (Array.isArray(data)) {
+        setUserMotors(data);
+      } else {
+        console.error('Unexpected response format:', data);
+        setUserMotors([]);
+      }
     } catch (err) {
       console.error("Failed to fetch user motors:", err);
+      setUserMotors([]);
     }
   };
 
@@ -107,7 +129,7 @@ const UserMotor = () => {
     }
   };
 
-  const filteredMotors = userMotors.filter((m) =>
+  const filteredMotors = (userMotors || []).filter((m) =>
     m.nickname?.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -157,7 +179,7 @@ const UserMotor = () => {
                     Total Assignments
                   </Typography>
                   <Typography variant="h3" color="secondary.main" fontWeight="bold">
-                    {userMotors.length}
+                    {(userMotors || []).length}
                   </Typography>
                 </Box>
                 <Box 
@@ -198,7 +220,7 @@ const UserMotor = () => {
                     Users with Motors
                   </Typography>
                   <Typography variant="h3" color="info.main" fontWeight="bold">
-                    {new Set(userMotors.map(m => m.userId)).size}
+                    {new Set((userMotors || []).map(m => m.userId)).size}
                   </Typography>
                 </Box>
                 <Box 
@@ -239,7 +261,7 @@ const UserMotor = () => {
                     Nicknamed Motors
                   </Typography>
                   <Typography variant="h3" color="success.main" fontWeight="bold">
-                    {userMotors.filter(m => m.nickname).length}
+                    {(userMotors || []).filter(m => m.nickname).length}
                   </Typography>
                 </Box>
                 <Box 
@@ -436,7 +458,7 @@ const UserMotor = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredMotors
+            {(filteredMotors || [])
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((motor) => (
                 <TableRow 
@@ -478,7 +500,7 @@ const UserMotor = () => {
         </Table>
         <TablePagination
           component="div"
-          count={filteredMotors.length}
+          count={(filteredMotors || []).length}
           page={page}
           onPageChange={(e, newPage) => setPage(newPage)}
           rowsPerPage={rowsPerPage}

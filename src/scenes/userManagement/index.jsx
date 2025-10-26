@@ -39,23 +39,64 @@ const UserManagement = () => {
   const [topBarangayData, setTopBarangayData] = useState(null);
   const [growthData, setGrowthData] = useState(null);
 
-  useEffect(() => {
+  // Fetch data only when component mounts (not on every navigation)
+  React.useMemo(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch(`${LOCALHOST_IP}/api/auth/users`);
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+          throw new Error('No admin token found. Please login first.');
+        }
+
+        const res = await fetch(`${LOCALHOST_IP}/api/admin-users`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || `API request failed with status ${res.status}`);
+        }
+        
         const data = await res.json();
-        setUsers(data);
-        setFilteredUsers(data);
-        processChartData(data);
+        console.log('✅ USER MANAGEMENT - API Response:', data);
+        
+        // Handle response structure based on backend controller
+        let usersData = [];
+        if (data.success && data.data && data.data.users) {
+          usersData = data.data.users;
+        } else if (Array.isArray(data)) {
+          usersData = data;
+        } else {
+          console.warn('⚠️ USER MANAGEMENT - Unexpected data structure:', data);
+          usersData = [];
+        }
+        
+        console.log('📊 USER MANAGEMENT - Processed users data:', {
+          usersCount: usersData.length,
+          dataStructure: data.success ? 'backend format' : 'array'
+        });
+        
+        setUsers(usersData);
+        setFilteredUsers(usersData);
+        processChartData(usersData);
       } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error("❌ USER MANAGEMENT - Error fetching users:", error);
+        // Set empty arrays on error to prevent crashes
+        setUsers([]);
+        setFilteredUsers([]);
+        processChartData([]);
       }
     };
     fetchUsers();
-  }, []);
+  }, []); // Empty dependency array - only runs once
 
   useEffect(() => {
-    let filtered = [...users];
+    // Ensure users is always an array
+    const usersArray = Array.isArray(users) ? users : [];
+    let filtered = [...usersArray];
     if (barangayFilter !== "All") {
       filtered = filtered.filter((u) => u.barangay === barangayFilter);
     }
@@ -68,8 +109,14 @@ const UserManagement = () => {
   }, [searchText, barangayFilter, users]);
 
   const processChartData = (data) => {
-    const barangayCounts = data.reduce((acc, user) => {
-      acc[user.barangay] = (acc[user.barangay] || 0) + 1;
+    // Ensure data is always an array
+    const usersArray = Array.isArray(data) ? data : [];
+    console.log('📊 USER MANAGEMENT - Processing chart data:', { usersCount: usersArray.length });
+    
+    // Handle barangay data with null/undefined checks
+    const barangayCounts = usersArray.reduce((acc, user) => {
+      const barangay = user.barangay || 'Unknown';
+      acc[barangay] = (acc[barangay] || 0) + 1;
       return acc;
     }, {});
 
@@ -77,9 +124,13 @@ const UserManagement = () => {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
-    const dateCounts = data.reduce((acc, user) => {
-      const date = new Date(user.createdAt).toLocaleDateString();
-      acc[date] = (acc[date] || 0) + 1;
+    // Handle date data with proper date parsing
+    const dateCounts = usersArray.reduce((acc, user) => {
+      const createdAt = user.createdAt || user.created_at;
+      if (createdAt) {
+        const date = new Date(createdAt).toLocaleDateString();
+        acc[date] = (acc[date] || 0) + 1;
+      }
       return acc;
     }, {});
 
@@ -146,6 +197,7 @@ const UserManagement = () => {
       headerName: "Email",
       flex: 1,
       renderCell: (params) => {
+        if (!params.value) return 'N/A';
         const [user, domain] = params.value.split("@");
         const masked = user.slice(0, 2) + "*".repeat(user.length - 2);
         return `${masked}@${domain}`;
@@ -153,9 +205,20 @@ const UserManagement = () => {
     },
     { field: "barangay", headerName: "Barangay", flex: 0.6 },
     { field: "street", headerName: "Street", flex: 0.6 },
+    { field: "city", headerName: "City", flex: 0.6 },
+    { field: "isActive", headerName: "Status", flex: 0.5, 
+      renderCell: (params) => (
+        <span style={{ 
+          color: params.value ? '#4caf50' : '#f44336',
+          fontWeight: 'bold'
+        }}>
+          {params.value ? 'Active' : 'Inactive'}
+        </span>
+      )
+    },
   ];
 
-  const uniqueBarangays = [...new Set(users.map((u) => u.barangay))];
+  const uniqueBarangays = [...new Set((Array.isArray(users) ? users : []).map((u) => u.barangay))];
 
   return (
     <Box p="1.5rem 2.5rem" sx={{ backgroundColor: theme.palette.background.default }}>
@@ -186,7 +249,7 @@ const UserManagement = () => {
             Total Users
           </Typography>
           <Typography variant="h3" color="secondary.main" fontWeight="bold">
-            {users.length}
+            {(Array.isArray(users) ? users : []).length}
           </Typography>
         </Paper>
         <Paper 
@@ -287,7 +350,7 @@ const UserManagement = () => {
         }}
       >
         <DataGrid
-          getRowId={(row) => row._id}
+          getRowId={(row) => row._id || row.id}
           rows={filteredUsers}
           columns={columns}
           pageSize={10}

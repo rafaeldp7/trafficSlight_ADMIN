@@ -7,11 +7,14 @@ import {
   SettingsOutlined,
   ArrowDropDownOutlined,
   Refresh,
+  Person,
+  Security,
 } from "@mui/icons-material";
 import FlexBetween from "components/FlexBetween";
 import { useDispatch, useSelector } from "react-redux";
 import { setMode, setLogout } from "state";
 import { api } from "state/api";
+import { useAdminAuth } from "contexts/AdminAuthContext";
 //import profileImage from "assets/traffic-slight-logo-with-bg.png";
 import {
   AppBar,
@@ -34,6 +37,21 @@ const Navbar = ({ user, isSidebarOpen, setIsSidebarOpen }) => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const currentUser = useSelector((state) => state.global.user);
+  
+  // Safely get admin auth context with fallbacks
+  let admin = null;
+  let isAuthenticated = false;
+  let logout = () => {};
+  
+  try {
+    const adminAuth = useAdminAuth();
+    admin = adminAuth.admin;
+    isAuthenticated = adminAuth.isAuthenticated;
+    logout = adminAuth.logout;
+  } catch (error) {
+    // If AdminAuthProvider is not available, use fallback values
+    console.warn('AdminAuthProvider not available in Navbar, using fallback values');
+  }
 
   const [anchorEl, setAnchorEl] = useState(null);
   const isOpen = Boolean(anchorEl);
@@ -41,7 +59,11 @@ const Navbar = ({ user, isSidebarOpen, setIsSidebarOpen }) => {
   const handleClose = () => setAnchorEl(null);
 
   const handleLogout = () => {
-    dispatch(setLogout());
+    if (isAuthenticated && admin) {
+      logout();
+    } else {
+      dispatch(setLogout());
+    }
     handleClose();
   };
 
@@ -153,7 +175,7 @@ const Navbar = ({ user, isSidebarOpen, setIsSidebarOpen }) => {
                 fontWeight: 600,
               }}
             >
-              {currentUser?.name?.charAt(0) || "A"}
+              {admin?.firstName?.charAt(0) || admin?.name?.charAt(0) || "A"}
             </Avatar>
             <Button
               onClick={handleClick}
@@ -168,9 +190,29 @@ const Navbar = ({ user, isSidebarOpen, setIsSidebarOpen }) => {
                 },
               }}
             >
-              <Typography variant="body2" fontWeight="medium">
-                {currentUser?.name || "Admin"}
-              </Typography>
+              <Box display="flex" flexDirection="column" alignItems="flex-start">
+                <Typography variant="body2" fontWeight="medium">
+                  {admin?.firstName && admin?.lastName 
+                    ? `${admin.firstName} ${admin.lastName}` 
+                    : admin?.name || currentUser?.name || "Admin"}
+                </Typography>
+                {admin?.role && (
+                  <Chip
+                    label={admin.role.displayName || admin.role.name || "Admin"}
+                    size="small"
+                    color={
+                      admin.role.name === 'super_admin' ? 'error' :
+                      admin.role.name === 'admin' ? 'primary' :
+                      admin.role.name === 'viewer' ? 'default' : 'secondary'
+                    }
+                    sx={{ 
+                      height: 16, 
+                      fontSize: '0.7rem',
+                      '& .MuiChip-label': { px: 1 }
+                    }}
+                  />
+                )}
+              </Box>
               <ArrowDropDownOutlined sx={{ fontSize: "16px" }} />
             </Button>
             <Menu
@@ -181,8 +223,21 @@ const Navbar = ({ user, isSidebarOpen, setIsSidebarOpen }) => {
               transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
               <MenuItem onClick={handleClose}>
-                <Typography variant="body2">Profile</Typography>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Person sx={{ fontSize: 16 }} />
+                  <Typography variant="body2">Profile</Typography>
+                </Box>
               </MenuItem>
+              {admin?.role && (
+                <MenuItem onClick={handleClose}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Security sx={{ fontSize: 16 }} />
+                    <Typography variant="body2">
+                      Role: {admin.role.displayName || admin.role.name}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              )}
               <MenuItem onClick={handleLogout}>
                 <Typography variant="body2" color="error">
                   Logout

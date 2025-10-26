@@ -21,7 +21,7 @@ import AdminManagement from "scenes/adminManagement";
 import AdminLogs from "scenes/adminLogs";
 import AdminDashboard from "scenes/adminDashboard"; // NEW
 import ErrorBoundary from "components/ErrorBoundary";
-import { AuthProvider } from "contexts/AuthContext";
+import { AdminAuthProvider } from "contexts/AdminAuthContext";
 
 function App() {
   const mode = useSelector((state) => state.global.mode);
@@ -31,11 +31,11 @@ function App() {
   return (
     <div className="app">
       <ErrorBoundary>
-        <AuthProvider>
+        <AdminAuthProvider>
           <BrowserRouter>
-            <ThemeProvider theme={theme}>
-              <CssBaseline />
-              <Routes>
+              <ThemeProvider theme={theme}>
+                <CssBaseline />
+                <Routes>
                 {/* Public Routes */}
                 <Route 
                   path="/login" 
@@ -69,7 +69,7 @@ function App() {
               </Routes>
             </ThemeProvider>
           </BrowserRouter>
-        </AuthProvider>
+        </AdminAuthProvider>
       </ErrorBoundary>
     </div>
   );

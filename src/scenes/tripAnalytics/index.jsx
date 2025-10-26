@@ -57,11 +57,8 @@ const AdminTripsDashboard = () => {
       const res = await axios.get(`${API}/analytics/summary`);
       const data = res.data;
       setStats([
-        { label: "Total Trips", value: data.totalTrips },
-        // { label: "Total Distance", value: `${safeFixed(data.totalDistance)} km` },
-        // { label: "Total Time", value: `${safeFixed(data.totalTime)} mins` },
-        // { label: "Total Fuel", value: `${safeFixed(data.totalFuel)} L` },
-        // { label: "Total Expense", value: `₱ ${safeFixed(data.totalExpense)}` },
+        { label: "Total Trips", value: data.analytics.totalTrips },
+        
       ]);
     } catch (err) {
       console.error("Error fetching overall stats:", err);
@@ -372,7 +369,7 @@ const AdminTripsDashboard = () => {
                 <TableCell>{trip._id || "Unknown"}</TableCell>
                 <TableCell>
                   <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
-                    {trip.motorId?.motorcycleId?.model
+                    {trip.motorId?.motorcycleId?.name
                       ? `${trip.motorId.motorcycleId.model} (${trip.motorId.motorcycleId.engineDisplacement}cc)`
                       : "Model N/A"}
                   </Typography>
@@ -429,4 +426,3 @@ const AdminTripsDashboard = () => {
 };
 
 export default AdminTripsDashboard;
-   

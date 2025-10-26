@@ -2,18 +2,74 @@ import { createSlice } from "@reduxjs/toolkit";
 
 // Get initial state from localStorage or use defaults
 const getInitialState = () => {
-    const savedUser = localStorage.getItem('adminUser');
-    const savedToken = localStorage.getItem('adminToken');
-    const savedMode = localStorage.getItem('adminMode') || 'dark';
-    
-    return {
-        mode: savedMode,
-        user: savedUser ? JSON.parse(savedUser) : null,
-        token: savedToken,
-        isLoggedIn: !!(savedUser && savedToken),
-    };
+    try {
+        const savedUser = localStorage.getItem('adminData') || localStorage.getItem('adminUser');
+        const savedToken = localStorage.getItem('adminToken');
+        const savedMode = localStorage.getItem('adminMode') || 'dark';
+        
+        // Validate savedUser before parsing
+        let parsedUser = null;
+        if (savedUser && savedUser !== 'undefined' && savedUser !== 'null' && savedUser.trim() !== '') {
+            try {
+                parsedUser = JSON.parse(savedUser);
+            } catch (parseError) {
+                console.warn('Invalid JSON in localStorage, clearing user data:', parseError);
+                localStorage.removeItem('adminData');
+                localStorage.removeItem('adminUser');
+                localStorage.removeItem('adminToken');
+            }
+        }
+        
+        return {
+            mode: savedMode,
+            user: parsedUser,
+            token: savedToken && savedToken !== 'undefined' ? savedToken : null,
+            isLoggedIn: !!(parsedUser && savedToken && savedToken !== 'undefined'),
+        };
+    } catch (error) {
+        console.error('Error parsing localStorage data:', error);
+        // Clear potentially corrupted data
+        localStorage.removeItem('adminData');
+        localStorage.removeItem('adminUser');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminMode');
+        return {
+            mode: 'dark',
+            user: null,
+            token: null,
+            isLoggedIn: false,
+        };
+    }
 };
 
+// Clean up any corrupted localStorage data on app startup
+const cleanupLocalStorage = () => {
+    try {
+        const adminData = localStorage.getItem('adminData');
+        const adminUser = localStorage.getItem('adminUser');
+        const adminToken = localStorage.getItem('adminToken');
+        
+        // Check for corrupted data
+        if (adminData === 'undefined' || adminData === 'null' || adminData === '') {
+            localStorage.removeItem('adminData');
+        }
+        if (adminUser === 'undefined' || adminUser === 'null' || adminUser === '') {
+            localStorage.removeItem('adminUser');
+        }
+        if (adminToken === 'undefined' || adminToken === 'null' || adminToken === '') {
+            localStorage.removeItem('adminToken');
+        }
+    } catch (error) {
+        console.warn('Error cleaning up localStorage:', error);
+        // Clear all auth-related data if cleanup fails
+        localStorage.removeItem('adminData');
+        localStorage.removeItem('adminUser');
+        localStorage.removeItem('adminToken');
+    }
+};
+
+// Run cleanup before getting initial state
+cleanupLocalStorage();
 const initialState = getInitialState();
 
 
@@ -30,8 +86,8 @@ export const globalSlice = createSlice({
             state.token = action.payload.token;
             state.isLoggedIn = true;
             
-            // Save to localStorage
-            localStorage.setItem('adminUser', JSON.stringify(action.payload.user));
+            // Save to localStorage (use adminData to match auth service)
+            localStorage.setItem('adminData', JSON.stringify(action.payload.user));
             localStorage.setItem('adminToken', action.payload.token);
         },
         setLogout: (state) => {
@@ -39,7 +95,8 @@ export const globalSlice = createSlice({
             state.token = null;
             state.isLoggedIn = false;
             
-            // Clear localStorage
+            // Clear localStorage (clear both possible keys)
+            localStorage.removeItem('adminData');
             localStorage.removeItem('adminUser');
             localStorage.removeItem('adminToken');
         }

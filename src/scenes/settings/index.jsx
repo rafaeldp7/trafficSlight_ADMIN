@@ -70,7 +70,7 @@ export default Settings;
       headerName: "# of Products",
       flex: 0.5,
       sortable: false,
-      renderCell: (params) => params.value.length,
+      renderCell: (params) => (params.value || []).length,
     },
     {
       field: "cost",

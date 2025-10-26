@@ -23,18 +23,24 @@ import {
   InputLabel,
   Alert,
   CircularProgress,
-  Snackbar
+  Snackbar,
+  Grid,
+  FormControlLabel,
+  Switch
 } from '@mui/material';
 import { Edit, Delete, Add, Visibility, PersonAdd, Security } from '@mui/icons-material';
 import Header from 'components/Header';
 import FlexBetween from 'components/FlexBetween';
+import { usePermissions } from 'hooks/usePermissions';
 
 const AdminManagement = () => {
+  const { canRead, canCreate, canUpdate, canDelete, canManage, canOnlyView, userRoleDisplay } = usePermissions();
   const [admins, setAdmins] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [openRoleDialog, setOpenRoleDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [formData, setFormData] = useState({
@@ -42,10 +48,18 @@ const AdminManagement = () => {
     lastName: '',
     email: '',
     password: '',
-    roleId: ''
+    role: ''
+  });
+  const [editFormData, setEditFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    role: '',
+    isActive: true
   });
   const [roleFormData, setRoleFormData] = useState({
     name: '',
+    displayName: '',
     description: '',
     permissions: {
       canCreate: false,
@@ -57,38 +71,54 @@ const AdminManagement = () => {
     }
   });
 
-  useEffect(() => {
-    fetchAdmins();
-    fetchRoles();
-  }, []);
-
   const fetchAdmins = async () => {
     setLoading(true);
     try {
-      // Try real backend first, fallback to mock if not available
-      try {
-        const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/admins', {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setAdmins(data.admins || []);
-          return; // Exit early on success
-        }
-      } catch (backendError) {
-        console.log('⚠️ ADMIN MANAGEMENT - Backend not available, using mock data:', backendError.message);
+      console.log('🔄 ADMIN MANAGEMENT - Fetching admins from backend API...');
+      
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('No admin token found. Please login first.');
       }
 
-      // If backend fails, show error
-      console.error('Backend admin management not available');
-      showSnackbar('Admin management service not available', 'error');
-      setAdmins([]);
+      const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('🔍 ADMIN MANAGEMENT - API response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `API request failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ ADMIN MANAGEMENT - Admins API success:', data);
+      
+      // Handle response structure based on backend controller
+      let adminsData = [];
+      if (data.success && data.data && data.data.admins) {
+        adminsData = data.data.admins;
+      } else if (Array.isArray(data)) {
+        adminsData = data;
+      } else {
+        console.warn('⚠️ ADMIN MANAGEMENT - Unexpected data structure:', data);
+        adminsData = [];
+      }
+      
+      console.log('📊 ADMIN MANAGEMENT - Setting admins:', adminsData.length, 'admins found');
+      setAdmins(adminsData);
+      
+      if (adminsData.length === 0) {
+        console.log('ℹ️ ADMIN MANAGEMENT - No admins found in backend. This is normal if no admins have been created yet.');
+      }
+      
     } catch (error) {
-      console.error('Error fetching admins:', error);
-      showSnackbar('Failed to fetch admins', 'error');
+      console.error('❌ ADMIN MANAGEMENT - Error fetching admins:', error);
+      showSnackbar(`Failed to fetch admins: ${error.message}`, 'error');
       setAdmins([]);
     } finally {
       setLoading(false);
@@ -97,63 +127,133 @@ const AdminManagement = () => {
 
   const fetchRoles = async () => {
     try {
-      // Try real backend first, fallback to mock if not available
-      try {
-        const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/admin-roles', {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setRoles(data.roles || []);
-          return; // Exit early on success
+      console.log('🔄 ADMIN MANAGEMENT - Fetching roles from API...');
+      
+      const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/roles', {
+        headers: {
+          'Content-Type': 'application/json'
         }
-      } catch (backendError) {
-        console.log('⚠️ ADMIN MANAGEMENT - Backend not available for roles, using mock data:', backendError.message);
+      });
+      
+      console.log('🔍 ADMIN MANAGEMENT - Roles API response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Roles API request failed with status ${response.status}`);
       }
-
-      // If backend fails, show error
-      console.error('Backend admin roles not available');
-      showSnackbar('Admin roles service not available', 'error');
-      setRoles([]);
+      
+      const data = await response.json();
+      console.log('✅ ADMIN MANAGEMENT - Roles API success:', data);
+      
+      // Handle response structure based on backend controller
+      let rolesData = [];
+      if (data.success && data.data && data.data.roles) {
+        rolesData = data.data.roles;
+      } else if (Array.isArray(data)) {
+        rolesData = data;
+      } else {
+        console.warn('⚠️ ADMIN MANAGEMENT - Unexpected roles data structure:', data);
+        rolesData = [];
+      }
+      
+      console.log('📊 ADMIN MANAGEMENT - Setting roles:', rolesData.length, 'roles found');
+      setRoles(rolesData);
+      
     } catch (error) {
-      console.error('Error fetching roles:', error);
-      showSnackbar('Failed to fetch roles', 'error');
+      console.error('❌ ADMIN MANAGEMENT - Error fetching roles:', error);
+      showSnackbar(`Failed to fetch roles: ${error.message}`, 'error');
       setRoles([]);
     }
   };
 
+  // Fetch data only when component mounts (not on every navigation)
+  React.useMemo(() => {
+    console.log('🔄 ADMIN MANAGEMENT - Component mounted, fetching data...');
+    fetchAdmins();
+    fetchRoles();
+  }, []); // Empty dependency array - only runs once
+
   const handleCreateAdmin = async () => {
     try {
-      // Try real backend first, fallback to mock if not available
-      try {
-        const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/admins', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(formData)
-        });
-        
-        if (response.ok) {
-          showSnackbar('Admin created successfully', 'success');
-          fetchAdmins();
-          setOpenDialog(false);
-          setFormData({ firstName: '', lastName: '', email: '', password: '', roleId: '' });
-          return; // Exit early on success
-        }
-      } catch (backendError) {
-        console.log('⚠️ ADMIN MANAGEMENT - Backend not available for create admin, using mock service:', backendError.message);
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('No admin token found. Please login first.');
       }
 
-      // If backend fails, show error
-      console.error('Backend admin creation not available');
-      showSnackbar('Admin creation service not available', 'error');
+      const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to create admin: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ ADMIN MANAGEMENT - Admin created successfully:', data);
+      
+      showSnackbar('Admin created successfully', 'success');
+      fetchAdmins();
+      setOpenDialog(false);
+      setFormData({ firstName: '', lastName: '', email: '', password: '', role: '' });
+      
     } catch (error) {
-      console.error('Error creating admin:', error);
-      showSnackbar('Failed to create admin', 'error');
+      console.error('❌ ADMIN MANAGEMENT - Error creating admin:', error);
+      showSnackbar(`Failed to create admin: ${error.message}`, 'error');
+    }
+  };
+
+  const handleEditAdmin = (admin) => {
+    setSelectedAdmin(admin);
+    setEditFormData({
+      firstName: admin.firstName || '',
+      lastName: admin.lastName || '',
+      email: admin.email || '',
+      role: admin.role || '',
+      isActive: admin.isActive !== false
+    });
+    setOpenEditDialog(true);
+  };
+
+  const handleUpdateAdmin = async () => {
+    try {
+      console.log('🔄 ADMIN MANAGEMENT - Updating admin:', selectedAdmin._id, editFormData);
+      
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('No admin token found. Please login first.');
+      }
+
+      const response = await fetch(`https://ts-backend-1-jyit.onrender.com/api/admin-management/${selectedAdmin._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(editFormData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to update admin: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ ADMIN MANAGEMENT - Admin updated successfully:', data);
+      
+      showSnackbar('Admin updated successfully', 'success');
+      fetchAdmins();
+      setOpenEditDialog(false);
+      setSelectedAdmin(null);
+      
+    } catch (error) {
+      console.error('❌ ADMIN MANAGEMENT - Error updating admin:', error);
+      showSnackbar(`Failed to update admin: ${error.message}`, 'error');
     }
   };
 
@@ -189,23 +289,33 @@ const AdminManagement = () => {
 
   const handleDeactivateAdmin = async (adminId) => {
     try {
-      const response = await fetch(`https://ts-backend-1-jyit.onrender.com/api/admin-management/admins/${adminId}/deactivate`, {
-        method: 'PUT',
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('No admin token found. Please login first.');
+      }
+
+      const response = await fetch(`https://ts-backend-1-jyit.onrender.com/api/admin-management/${adminId}`, {
+        method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         }
       });
       
-      if (response.ok) {
-        showSnackbar('Admin deactivated successfully', 'success');
-        fetchAdmins();
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
-        showSnackbar(errorData.error || 'Failed to deactivate admin', 'error');
+        throw new Error(errorData.message || `Failed to deactivate admin: ${response.status}`);
       }
+      
+      const data = await response.json();
+      console.log('✅ ADMIN MANAGEMENT - Admin deactivated successfully:', data);
+      
+      showSnackbar('Admin deactivated successfully', 'success');
+      fetchAdmins();
+      
     } catch (error) {
-      console.error('Error deactivating admin:', error);
-      showSnackbar('Failed to deactivate admin', 'error');
+      console.error('❌ ADMIN MANAGEMENT - Error deactivating admin:', error);
+      showSnackbar(`Failed to deactivate admin: ${error.message}`, 'error');
     }
   };
 
@@ -226,6 +336,7 @@ const AdminManagement = () => {
         setOpenRoleDialog(false);
         setRoleFormData({
           name: '',
+          displayName: '',
           description: '',
           permissions: {
             canCreate: false,
@@ -253,9 +364,18 @@ const AdminManagement = () => {
   const getRoleColor = (roleName) => {
     switch (roleName) {
       case 'super_admin': return 'error';
-      case 'admin': return 'primary';
-      case 'viewer': return 'default';
+      case 'admin': return 'info';
+      case 'moderator': return 'warning';
       default: return 'secondary';
+    }
+  };
+
+  const getRoleDisplayName = (roleName) => {
+    switch (roleName) {
+      case 'super_admin': return 'Super Admin';
+      case 'admin': return 'Admin';
+      case 'moderator': return 'Moderator';
+      default: return 'No Role';
     }
   };
 
@@ -280,30 +400,59 @@ const AdminManagement = () => {
     rolesLength: roles.length
   });
 
+  // Show debug info in development
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
   return (
     <Box m="1.5rem 2.5rem">
       <FlexBetween>
         <Header title="Admin Management" subtitle="Manage admin users and roles" />
+        {isDevelopment && (
+          <Box sx={{ p: 2, backgroundColor: '#f5f5f5', borderRadius: 1, fontSize: '0.8rem' }}>
+            <Typography variant="caption" color="text.secondary">
+              Debug: {admins.length} admins, {roles.length} roles, Loading: {loading ? 'Yes' : 'No'}
+            </Typography>
+            {admins.length === 0 && (
+              <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1 }}>
+                No admins found - Check console for API response details
+              </Typography>
+            )}
+          </Box>
+        )}
       </FlexBetween>
+      
+      {/* Security Warning for users without proper permissions */}
+      {!canRead && !canCreate && !canUpdate && !canDelete && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            <strong>Access Restricted:</strong> You don't have permission to manage admin users. 
+            Contact your system administrator to request appropriate access.
+          </Typography>
+        </Alert>
+      )}
+      
+      {/* Viewer-only warning */}
+      {canOnlyView && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            <strong>Read-Only Access:</strong> You are logged in as a {userRoleDisplay}. 
+            You can view admin users but cannot create, edit, or delete them.
+          </Typography>
+        </Alert>
+      )}
       
       <Box mt="20px">
         <Box display="flex" gap={2} mb={3}>
-          <Button
-            variant="contained"
-            startIcon={<PersonAdd />}
-            onClick={() => setOpenDialog(true)}
-            sx={{ backgroundColor: '#00ADB5' }}
-          >
-            Add New Admin
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<Security />}
-            onClick={() => setOpenRoleDialog(true)}
-            sx={{ borderColor: '#00ADB5', color: '#00ADB5' }}
-          >
-            Create Role
-          </Button>
+          {canCreate && (
+            <Button
+              variant="contained"
+              startIcon={<PersonAdd />}
+              onClick={() => setOpenDialog(true)}
+              sx={{ backgroundColor: '#00ADB5' }}
+            >
+              Add New Admin
+            </Button>
+          )}
         </Box>
 
         <TableContainer component={Paper} sx={{ boxShadow: 2 }}>
@@ -320,14 +469,14 @@ const AdminManagement = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {admins.map((admin) => (
+              {(admins || []).map((admin) => (
                 <TableRow key={admin._id} hover>
                   <TableCell>{admin.firstName} {admin.lastName}</TableCell>
                   <TableCell>{admin.email}</TableCell>
                   <TableCell>
                     <Chip 
-                      label={admin.role?.name || 'No Role'} 
-                      color={getRoleColor(admin.role?.name)}
+                      label={getRoleDisplayName(admin.role)} 
+                      color={getRoleColor(admin.role)}
                       size="small"
                       variant="outlined"
                     />
@@ -345,20 +494,26 @@ const AdminManagement = () => {
                   </TableCell>
                   <TableCell>
                     <Box display="flex" gap={1}>
-                      <IconButton 
-                        size="small"
-                        onClick={() => setSelectedAdmin(admin)}
-                        sx={{ color: '#00ADB5' }}
-                      >
-                        <Edit />
-                      </IconButton>
-                      <IconButton 
-                        size="small"
-                        onClick={() => handleDeactivateAdmin(admin._id)}
-                        sx={{ color: '#ff6b6b' }}
-                      >
-                        <Delete />
-                      </IconButton>
+                      {canUpdate && (
+                        <IconButton 
+                          size="small"
+                          onClick={() => handleEditAdmin(admin)}
+                          sx={{ color: '#00ADB5' }}
+                          title="Edit Admin"
+                        >
+                          <Edit />
+                        </IconButton>
+                      )}
+                      {canDelete && (
+                        <IconButton 
+                          size="small"
+                          onClick={() => handleDeactivateAdmin(admin._id)}
+                          sx={{ color: '#ff6b6b' }}
+                          title="Deactivate Admin"
+                        >
+                          <Delete />
+                        </IconButton>
+                      )}
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -367,11 +522,25 @@ const AdminManagement = () => {
           </Table>
         </TableContainer>
 
-        {admins.length === 0 && (
+        {(admins || []).length === 0 && !loading && (
           <Box textAlign="center" py={4}>
             <Typography variant="h6" color="text.secondary">
               No admins found
             </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              {loading ? 'Loading admins...' : 'Create your first admin account to get started'}
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<PersonAdd />}
+              onClick={() => setOpenDialog(true)}
+              sx={{ 
+                backgroundColor: '#00ADB5',
+                mt: 2
+              }}
+            >
+              Create First Admin
+            </Button>
           </Box>
         )}
       </Box>
@@ -417,13 +586,13 @@ const AdminManagement = () => {
           <FormControl fullWidth margin="normal">
             <InputLabel>Role</InputLabel>
             <Select
-              value={formData.roleId}
-              onChange={(e) => setFormData({...formData, roleId: e.target.value})}
+              value={formData.role}
+              onChange={(e) => setFormData({...formData, role: e.target.value})}
               required
             >
-              {roles.map((role) => (
-                <MenuItem key={role._id} value={role._id}>
-                  {role.name} - {role.description}
+              {(roles || []).map((role) => (
+                <MenuItem key={role.name} value={role.name}>
+                  {role.displayName} - {role.description}
                 </MenuItem>
               ))}
             </Select>
@@ -431,9 +600,11 @@ const AdminManagement = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button onClick={handleCreateAdmin} variant="contained" sx={{ backgroundColor: '#00ADB5' }}>
-            Create
-          </Button>
+          {canCreate && (
+            <Button onClick={handleCreateAdmin} variant="contained" sx={{ backgroundColor: '#00ADB5' }}>
+              Create
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 
@@ -448,6 +619,15 @@ const AdminManagement = () => {
             onChange={(e) => setRoleFormData({...roleFormData, name: e.target.value})}
             margin="normal"
             required
+          />
+          <TextField
+            fullWidth
+            label="Display Name"
+            value={roleFormData.displayName}
+            onChange={(e) => setRoleFormData({...roleFormData, displayName: e.target.value})}
+            margin="normal"
+            required
+            placeholder="e.g., Super Administrator"
           />
           <TextField
             fullWidth
@@ -482,9 +662,83 @@ const AdminManagement = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenRoleDialog(false)}>Cancel</Button>
-          <Button onClick={handleCreateRole} variant="contained" sx={{ backgroundColor: '#00ADB5' }}>
-            Create Role
-          </Button>
+          {canUpdate && (
+            <Button onClick={handleCreateRole} variant="contained" sx={{ backgroundColor: '#00ADB5' }}>
+              Create Role
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Admin Dialog */}
+      <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Admin</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="First Name"
+                value={editFormData.firstName}
+                onChange={(e) => setEditFormData({ ...editFormData, firstName: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Last Name"
+                value={editFormData.lastName}
+                onChange={(e) => setEditFormData({ ...editFormData, lastName: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Email"
+                type="email"
+                value={editFormData.email}
+                onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth required>
+                <InputLabel>Role</InputLabel>
+                <Select
+                  value={editFormData.role}
+                  onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+                  label="Role"
+                >
+                  {roles.map((role) => (
+                    <MenuItem key={role.name} value={role.name}>
+                      {role.displayName} ({role.name})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={editFormData.isActive}
+                    onChange={(e) => setEditFormData({ ...editFormData, isActive: e.target.checked })}
+                  />
+                }
+                label="Active Status"
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
+          {canUpdate && (
+            <Button onClick={handleUpdateAdmin} variant="contained" sx={{ bgcolor: '#00ADB5' }}>
+              Update Admin
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 

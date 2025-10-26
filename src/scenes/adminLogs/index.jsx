@@ -44,37 +44,61 @@ const AdminLogs = () => {
     uniqueAdmins: 0
   });
 
-  useEffect(() => {
-    fetchLogs();
-    fetchStats();
-  }, [currentPage, filters]);
 
   const fetchLogs = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('No admin token found. Please login first.');
+      }
+
       const params = new URLSearchParams({
         page: currentPage,
         limit: 20,
         ...filters
       });
       
-      const response = await fetch(`https://ts-backend-1-jyit.onrender.com/api/admin-management/admin-logs?${params}`, {
+      const response = await fetch(`https://ts-backend-1-jyit.onrender.com/api/admin-logs?${params}`, {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         }
       });
       
-      if (response.ok) {
-        const data = await response.json();
-        setLogs(data.logs || []);
-        setTotalPages(data.pagination?.pages || 1);
-      } else {
-        console.error('Failed to fetch logs:', response.status, response.statusText);
-        setLogs([]);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `API request failed with status ${response.status}`);
       }
+      
+      const data = await response.json();
+      console.log('✅ ADMIN LOGS - Logs API success:', data);
+      
+      // Handle response structure based on backend controller
+      let logsData = [];
+      if (data.success && data.data && data.data.logs) {
+        logsData = data.data.logs;
+        setTotalPages(data.data.pagination?.pages || 1);
+      } else if (Array.isArray(data)) {
+        logsData = data;
+        setTotalPages(1);
+      } else {
+        console.warn('⚠️ ADMIN LOGS - Unexpected data structure:', data);
+        logsData = [];
+        setTotalPages(1);
+      }
+      
+      console.log('📊 ADMIN LOGS - Setting logs:', logsData.length, 'logs found');
+      setLogs(logsData);
+      
+      if (logsData.length === 0) {
+        console.log('ℹ️ ADMIN LOGS - No logs found in backend. This is normal if no admin activities have been recorded yet.');
+      }
+      
     } catch (error) {
-      console.error('Error fetching logs:', error);
+      console.error('❌ ADMIN LOGS - Error fetching logs:', error);
       setLogs([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -82,28 +106,57 @@ const AdminLogs = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/admin-logs/stats', {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('No admin token found. Please login first.');
+      }
+
+      const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-logs/stats', {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         }
       });
       
-      if (response.ok) {
-        const data = await response.json();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `API request failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ ADMIN LOGS - Stats API success:', data);
+      
+      // Handle response structure based on backend controller
+      if (data.success && data.data) {
         setStats({
-          totalLogs: data.totalLogs || 0,
-          todayLogs: data.todayLogs || 0,
-          uniqueAdmins: data.uniqueAdmins || 0
+          totalLogs: data.data.totalLogs || 0,
+          todayLogs: data.data.todayLogs || 0,
+          uniqueAdmins: data.data.uniqueAdmins || 0
         });
       } else {
-        console.error('Failed to fetch stats:', response.status, response.statusText);
-        setStats({ totalLogs: 0, todayLogs: 0, uniqueAdmins: 0 });
+        console.warn('⚠️ ADMIN LOGS - Unexpected stats data structure:', data);
+        setStats({
+          totalLogs: 0,
+          todayLogs: 0,
+          uniqueAdmins: 0
+        });
       }
+      
     } catch (error) {
-      console.error('Error fetching stats:', error);
-      setStats({ totalLogs: 0, todayLogs: 0, uniqueAdmins: 0 });
+      console.error('❌ ADMIN LOGS - Error fetching stats:', error);
+      setStats({
+        totalLogs: 0,
+        todayLogs: 0,
+        uniqueAdmins: 0
+      });
     }
   };
+
+  // Fetch data only when component mounts (not on every navigation)
+  React.useMemo(() => {
+    fetchLogs();
+    fetchStats();
+  }, []); // Empty dependency array - only runs once
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => ({
@@ -155,7 +208,7 @@ const AdminLogs = () => {
     }
   };
 
-  if (loading && logs.length === 0) {
+  if (loading && (logs || []).length === 0) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
@@ -287,12 +340,11 @@ const AdminLogs = () => {
               <TableCell sx={{ fontWeight: 'bold' }}>Action</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Resource</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Details</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>IP Address</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Timestamp</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {logs.map((log) => (
+            {(logs || []).map((log) => (
               <TableRow key={log._id} hover>
                 <TableCell>
                   <Box display="flex" alignItems="center" gap={1}>
@@ -323,11 +375,6 @@ const AdminLogs = () => {
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2" color="text.secondary">
-                    {log.ipAddress || 'N/A'}
-                  </Typography>
-                </TableCell>
-                <TableCell>
                   <Typography variant="body2">
                     {formatTimestamp(log.timestamp)}
                   </Typography>
@@ -341,7 +388,7 @@ const AdminLogs = () => {
         </Table>
       </TableContainer>
 
-      {logs.length === 0 && !loading && (
+      {(logs || []).length === 0 && !loading && (
         <Box textAlign="center" py={4}>
           <Typography variant="h6" color="text.secondary">
             No activity logs found

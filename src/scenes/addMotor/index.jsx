@@ -25,7 +25,7 @@ import FlexBetween from "components/FlexBetween";
 
 const AddMotor = () => {
   const theme = useTheme();
-  const API_URL = "https://ts-backend-1-jyit.onrender.com/api/motorcycles";
+  const API_URL = "https://ts-backend-1-jyit.onrender.com/api/admin-motors";
 
   const [formData, setFormData] = useState({
     model: "",
@@ -49,17 +49,48 @@ const AddMotor = () => {
 
   const fetchMotors = async () => {
     try {
-      const res = await fetch(API_URL);
+      const token = localStorage.getItem('adminToken');
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      console.log('Fetching motors from:', API_URL);
+      console.log('Headers:', headers);
+
+      const res = await fetch(API_URL, { headers });
+      console.log('Response status:', res.status);
+      
       const data = await res.json();
-      setMotors(data);
+      console.log('Response data:', data);
+      
+      // Handle structured response from backend
+      if (data.success && data.data && data.data.motors) {
+        console.log('Using structured response, motors:', data.data.motors);
+        setMotors(data.data.motors);
+      } else if (data.success && data.data && Array.isArray(data.data)) {
+        console.log('Using structured response with direct data array:', data.data);
+        setMotors(data.data);
+      } else if (Array.isArray(data)) {
+        console.log('Using array response, motors:', data);
+        setMotors(data);
+      } else {
+        console.error('Unexpected response format:', data);
+        setMotors([]);
+      }
     } catch (err) {
       console.error("Failed to fetch motorcycles:", err);
+      setMotors([]);
     }
   };
 
+  // Fetch data when component mounts
   useEffect(() => {
     fetchMotors();
-  }, []);
+  }, []); // Empty dependency array - only runs once
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -88,19 +119,33 @@ const AddMotor = () => {
     setMessage("");
 
     try {
+      const token = localStorage.getItem('adminToken');
       const method = editingId ? "PUT" : "POST";
       const endpoint = editingId ? `${API_URL}/${editingId}` : API_URL;
 
+      const headers = {
+        "Content-Type": "application/json"
+      };
+
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const response = await fetch(endpoint, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
+          brand: "Generic", // Required field for backend
           model,
-          engineDisplacement: engineDisplacement ? parseFloat(engineDisplacement) : undefined,
+          year: new Date().getFullYear(), // Default year
+          engineSize: engineDisplacement ? `${engineDisplacement}cc` : undefined,
           power,
           torque,
           fuelTank: fuelTank ? parseFloat(fuelTank) : undefined,
           fuelConsumption: parseFloat(fuelConsumption),
+          color: "Unknown", // Default color
+          fuelType: "gasoline", // Default fuel type
+          isActive: true
         }),
       });
 
@@ -119,7 +164,7 @@ const AddMotor = () => {
         setEditingId(null);
         fetchMotors();
       } else {
-        setMessage(data?.msg || "❌ Failed to save motorcycle.");
+        setMessage(data?.message || data?.msg || "❌ Failed to save motorcycle.");
       }
     } catch (error) {
       console.error("Submit error:", error);
@@ -132,10 +177,26 @@ const AddMotor = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this motor?")) return;
     try {
-      const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      const token = localStorage.getItem('adminToken');
+      const headers = {
+        "Content-Type": "application/json"
+      };
+
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`${API_URL}/${id}`, { 
+        method: "DELETE",
+        headers
+      });
+      
       if (res.ok) {
         setMessage("✅ Motorcycle deleted.");
         fetchMotors();
+      } else {
+        const data = await res.json();
+        setMessage(data?.message || "❌ Failed to delete.");
       }
     } catch (err) {
       console.error("Delete error:", err);
@@ -145,10 +206,26 @@ const AddMotor = () => {
 
   const handleRestore = async (id) => {
     try {
-      const res = await fetch(`${API_URL}/restore/${id}`, { method: "PUT" });
+      const token = localStorage.getItem('adminToken');
+      const headers = {
+        "Content-Type": "application/json"
+      };
+
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`${API_URL}/restore/${id}`, { 
+        method: "PUT",
+        headers
+      });
+      
       if (res.ok) {
         setMessage("✅ Motorcycle restored.");
         fetchMotors();
+      } else {
+        const data = await res.json();
+        setMessage(data?.message || "❌ Failed to restore.");
       }
     } catch (err) {
       console.error("Restore error:", err);
@@ -173,12 +250,19 @@ const AddMotor = () => {
     });
   };
 
-  const activeMotors = motors.filter(
+  const activeMotors = (motors || []).filter(
     (m) => !m.isDeleted && m.model.toLowerCase().includes(search.toLowerCase())
   );
-  const deletedMotors = motors.filter(
+  const deletedMotors = (motors || []).filter(
     (m) => m.isDeleted && m.model.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Debug logging
+  console.log('Total motors:', motors?.length || 0);
+  console.log('Active motors:', activeMotors?.length || 0);
+  console.log('Deleted motors:', deletedMotors?.length || 0);
+  console.log('Search term:', search);
+  console.log('Motors data:', motors);
 
   return (
     <Box p="1.5rem 2.5rem" sx={{ backgroundColor: theme.palette.background.default }}>
@@ -239,7 +323,7 @@ const AddMotor = () => {
                       Total Motorcycles
                     </Typography>
                     <Typography variant="h3" color="secondary.main" fontWeight="bold">
-                      {motors.length}
+                      {(motors || []).length}
                     </Typography>
                   </Box>
                   <Box 
@@ -280,7 +364,7 @@ const AddMotor = () => {
                       Active Motors
                     </Typography>
                     <Typography variant="h3" color="success.main" fontWeight="bold">
-                      {activeMotors.length}
+                      {(activeMotors || []).length}
                     </Typography>
                   </Box>
                   <Box 
@@ -321,7 +405,7 @@ const AddMotor = () => {
                       Deleted Motors
                     </Typography>
                     <Typography variant="h3" color="error.main" fontWeight="bold">
-                      {deletedMotors.length}
+                      {(deletedMotors || []).length}
                     </Typography>
                   </Box>
                   <Box 
@@ -577,7 +661,7 @@ const AddMotor = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {activeMotors
+            {(activeMotors || [])
               .slice(pageActive * rowsPerPageActive, pageActive * rowsPerPageActive + rowsPerPageActive)
               .map((motor) => (
                 <TableRow 
@@ -591,11 +675,11 @@ const AddMotor = () => {
                   }}
                 >
                   <TableCell>{motor.model}</TableCell>
-                  <TableCell>{motor.engineDisplacement} cc</TableCell>
-                  <TableCell>{motor.power}</TableCell>
-                  <TableCell>{motor.torque}</TableCell>
-                  <TableCell>{motor.fuelTank} L</TableCell>
-                  <TableCell>{motor.fuelConsumption} km/L</TableCell>
+                  <TableCell>{motor.engineSize || 'N/A'}</TableCell>
+                  <TableCell>{motor.power || 'N/A'}</TableCell>
+                  <TableCell>{motor.torque || 'N/A'}</TableCell>
+                  <TableCell>{motor.fuelTank ? `${motor.fuelTank} L` : 'N/A'}</TableCell>
+                  <TableCell>{motor.fuelConsumption ? `${motor.fuelConsumption} km/L` : 'N/A'}</TableCell>
                   <TableCell>
                     <IconButton 
                       onClick={() => handleEdit(motor)}
@@ -622,7 +706,7 @@ const AddMotor = () => {
         </Table>
         <TablePagination
           component="div"
-          count={activeMotors.length}
+          count={(activeMotors || []).length}
           page={pageActive}
           onPageChange={(e, newPage) => setPageActive(newPage)}
           rowsPerPage={rowsPerPageActive}
@@ -664,7 +748,7 @@ const AddMotor = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {deletedMotors
+            {(deletedMotors || [])
               .slice(pageDeleted * rowsPerPageDeleted, pageDeleted * rowsPerPageDeleted + rowsPerPageDeleted)
               .map((motor) => (
                 <TableRow 
@@ -678,11 +762,11 @@ const AddMotor = () => {
                   }}
                 >
                   <TableCell>{motor.model}</TableCell>
-                  <TableCell>{motor.engineDisplacement} cc</TableCell>
-                  <TableCell>{motor.power}</TableCell>
-                  <TableCell>{motor.torque}</TableCell>
-                  <TableCell>{motor.fuelTank} L</TableCell>
-                  <TableCell>{motor.fuelConsumption} km/L</TableCell>
+                  <TableCell>{motor.engineSize || 'N/A'}</TableCell>
+                  <TableCell>{motor.power || 'N/A'}</TableCell>
+                  <TableCell>{motor.torque || 'N/A'}</TableCell>
+                  <TableCell>{motor.fuelTank ? `${motor.fuelTank} L` : 'N/A'}</TableCell>
+                  <TableCell>{motor.fuelConsumption ? `${motor.fuelConsumption} km/L` : 'N/A'}</TableCell>
                   <TableCell>
                     <IconButton 
                       onClick={() => handleRestore(motor._id)}
@@ -700,7 +784,7 @@ const AddMotor = () => {
         </Table>
         <TablePagination
           component="div"
-          count={deletedMotors.length}
+          count={(deletedMotors || []).length}
           page={pageDeleted}
           onPageChange={(e, newPage) => setPageDeleted(newPage)}
           rowsPerPage={rowsPerPageDeleted}
