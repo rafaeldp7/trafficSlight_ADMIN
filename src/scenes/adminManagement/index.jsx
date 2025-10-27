@@ -27,7 +27,8 @@ import {
   Grid,
   FormControlLabel,
   Switch,
-  useTheme
+  useTheme,
+  Tooltip
 } from '@mui/material';
 import { Edit, Delete, Add, Visibility, PersonAdd, Security } from '@mui/icons-material';
 import Header from 'components/Header';
@@ -36,7 +37,7 @@ import { usePermissions } from 'hooks/usePermissions';
 
 const AdminManagement = () => {
   const theme = useTheme();
-  const { canRead, canCreate, canUpdate, canDelete, canManage, canOnlyView, userRoleDisplay } = usePermissions();
+  const { canRead, canCreate, canUpdate, canDelete, canManage, canOnlyView, userRoleDisplay, isSuperAdmin } = usePermissions();
   const [admins, setAdmins] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -403,16 +404,21 @@ const AdminManagement = () => {
       )}
       
       <Box mt="20px">
-        <Box display="flex" gap={2} mb={3}>
-          {canCreate && (
-            <Button
-              variant="contained"
-              startIcon={<PersonAdd />}
-              onClick={() => setOpenDialog(true)}
-              sx={{ backgroundColor: theme.palette.secondary.main }}
-            >
-              Add New Admin
-            </Button>
+        <Box display="flex" gap={2} mb={3} alignItems="center">
+          <Button
+            variant="contained"
+            startIcon={<PersonAdd />}
+            onClick={() => setOpenDialog(true)}
+            disabled={!isSuperAdmin}
+            sx={{ backgroundColor: theme.palette.secondary.main }}
+            title={!isSuperAdmin ? "Only Super Admins can add new admins" : ""}
+          >
+            Add New Admin
+          </Button>
+          {!isSuperAdmin && (
+            <Typography variant="body2" color="text.secondary">
+              You need Super Admin role to manage admins
+            </Typography>
           )}
         </Box>
 
@@ -471,26 +477,40 @@ const AdminManagement = () => {
                   </TableCell>
                   <TableCell>
                     <Box display="flex" gap={1}>
-                      {canUpdate && (
-                        <IconButton 
-                          size="small"
-                          onClick={() => handleEditAdmin(admin)}
-                          sx={{ color: '#00ADB5' }}
-                          title="Edit Admin"
-                        >
-                          <Edit />
-                        </IconButton>
-                      )}
-                      {canDelete && (
-                        <IconButton 
-                          size="small"
-                          onClick={() => handleDeactivateAdmin(admin._id)}
-                          sx={{ color: '#ff6b6b' }}
-                          title="Deactivate Admin"
-                        >
-                          <Delete />
-                        </IconButton>
-                      )}
+                      <Tooltip title={!isSuperAdmin ? "Only Super Admins can edit admins" : "Edit Admin"}>
+                        <span>
+                          <IconButton 
+                            size="small"
+                            onClick={() => handleEditAdmin(admin)}
+                            disabled={!isSuperAdmin}
+                            sx={{ 
+                              color: isSuperAdmin ? '#00ADB5' : 'disabled',
+                              '&.Mui-disabled': {
+                                color: 'rgba(0, 0, 0, 0.26)'
+                              }
+                            }}
+                          >
+                            <Edit />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Tooltip title={!isSuperAdmin ? "Only Super Admins can delete admins" : "Deactivate Admin"}>
+                        <span>
+                          <IconButton 
+                            size="small"
+                            onClick={() => handleDeactivateAdmin(admin._id)}
+                            disabled={!isSuperAdmin}
+                            sx={{ 
+                              color: isSuperAdmin ? '#ff6b6b' : 'disabled',
+                              '&.Mui-disabled': {
+                                color: 'rgba(0, 0, 0, 0.26)'
+                              }
+                            }}
+                          >
+                            <Delete />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
                     </Box>
                   </TableCell>
                 </TableRow>
