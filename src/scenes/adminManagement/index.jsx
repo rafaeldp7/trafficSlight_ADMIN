@@ -26,7 +26,8 @@ import {
   Snackbar,
   Grid,
   FormControlLabel,
-  Switch
+  Switch,
+  useTheme
 } from '@mui/material';
 import { Edit, Delete, Add, Visibility, PersonAdd, Security } from '@mui/icons-material';
 import Header from 'components/Header';
@@ -34,6 +35,7 @@ import FlexBetween from 'components/FlexBetween';
 import { usePermissions } from 'hooks/usePermissions';
 
 const AdminManagement = () => {
+  const theme = useTheme();
   const { canRead, canCreate, canUpdate, canDelete, canManage, canOnlyView, userRoleDisplay } = usePermissions();
   const [admins, setAdmins] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -74,7 +76,6 @@ const AdminManagement = () => {
   const fetchAdmins = async () => {
     setLoading(true);
     try {
-      console.log('🔄 ADMIN MANAGEMENT - Fetching admins from backend API...');
       
       const token = localStorage.getItem('adminToken');
       if (!token) {
@@ -88,7 +89,6 @@ const AdminManagement = () => {
         }
       });
       
-      console.log('🔍 ADMIN MANAGEMENT - API response status:', response.status);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -96,7 +96,6 @@ const AdminManagement = () => {
       }
       
       const data = await response.json();
-      console.log('✅ ADMIN MANAGEMENT - Admins API success:', data);
       
       // Handle response structure based on backend controller
       let adminsData = [];
@@ -109,11 +108,9 @@ const AdminManagement = () => {
         adminsData = [];
       }
       
-      console.log('📊 ADMIN MANAGEMENT - Setting admins:', adminsData.length, 'admins found');
       setAdmins(adminsData);
       
       if (adminsData.length === 0) {
-        console.log('ℹ️ ADMIN MANAGEMENT - No admins found in backend. This is normal if no admins have been created yet.');
       }
       
     } catch (error) {
@@ -127,7 +124,6 @@ const AdminManagement = () => {
 
   const fetchRoles = async () => {
     try {
-      console.log('🔄 ADMIN MANAGEMENT - Fetching roles from API...');
       
       const response = await fetch('https://ts-backend-1-jyit.onrender.com/api/admin-management/roles', {
         headers: {
@@ -135,7 +131,6 @@ const AdminManagement = () => {
         }
       });
       
-      console.log('🔍 ADMIN MANAGEMENT - Roles API response status:', response.status);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -143,7 +138,6 @@ const AdminManagement = () => {
       }
       
       const data = await response.json();
-      console.log('✅ ADMIN MANAGEMENT - Roles API success:', data);
       
       // Handle response structure based on backend controller
       let rolesData = [];
@@ -156,7 +150,6 @@ const AdminManagement = () => {
         rolesData = [];
       }
       
-      console.log('📊 ADMIN MANAGEMENT - Setting roles:', rolesData.length, 'roles found');
       setRoles(rolesData);
       
     } catch (error) {
@@ -168,7 +161,6 @@ const AdminManagement = () => {
 
   // Fetch data only when component mounts (not on every navigation)
   React.useMemo(() => {
-    console.log('🔄 ADMIN MANAGEMENT - Component mounted, fetching data...');
     fetchAdmins();
     fetchRoles();
   }, []); // Empty dependency array - only runs once
@@ -195,7 +187,6 @@ const AdminManagement = () => {
       }
       
       const data = await response.json();
-      console.log('✅ ADMIN MANAGEMENT - Admin created successfully:', data);
       
       showSnackbar('Admin created successfully', 'success');
       fetchAdmins();
@@ -222,7 +213,6 @@ const AdminManagement = () => {
 
   const handleUpdateAdmin = async () => {
     try {
-      console.log('🔄 ADMIN MANAGEMENT - Updating admin:', selectedAdmin._id, editFormData);
       
       const token = localStorage.getItem('adminToken');
       if (!token) {
@@ -244,7 +234,6 @@ const AdminManagement = () => {
       }
       
       const data = await response.json();
-      console.log('✅ ADMIN MANAGEMENT - Admin updated successfully:', data);
       
       showSnackbar('Admin updated successfully', 'success');
       fetchAdmins();
@@ -275,7 +264,6 @@ const AdminManagement = () => {
           return; // Exit early on success
         }
       } catch (backendError) {
-        console.log('⚠️ ADMIN MANAGEMENT - Backend not available for update role, using mock service:', backendError.message);
       }
 
       // If backend fails, show error
@@ -308,7 +296,6 @@ const AdminManagement = () => {
       }
       
       const data = await response.json();
-      console.log('✅ ADMIN MANAGEMENT - Admin deactivated successfully:', data);
       
       showSnackbar('Admin deactivated successfully', 'success');
       fetchAdmins();
@@ -391,35 +378,9 @@ const AdminManagement = () => {
     );
   }
 
-  // Debug logging
-  console.log('🔍 ADMIN MANAGEMENT - Component render state:', {
-    admins: admins,
-    adminsLength: admins.length,
-    loading: loading,
-    roles: roles,
-    rolesLength: roles.length
-  });
-
-  // Show debug info in development
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
   return (
     <Box m="1.5rem 2.5rem">
-      <FlexBetween>
-        <Header title="Admin Management" subtitle="Manage admin users and roles" />
-        {isDevelopment && (
-          <Box sx={{ p: 2, backgroundColor: '#f5f5f5', borderRadius: 1, fontSize: '0.8rem' }}>
-            <Typography variant="caption" color="text.secondary">
-              Debug: {admins.length} admins, {roles.length} roles, Loading: {loading ? 'Yes' : 'No'}
-            </Typography>
-            {admins.length === 0 && (
-              <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1 }}>
-                No admins found - Check console for API response details
-              </Typography>
-            )}
-          </Box>
-        )}
-      </FlexBetween>
+      <Header title="Admin Management" subtitle="Manage admin users and roles" mb={4} />
       
       {/* Security Warning for users without proper permissions */}
       {!canRead && !canCreate && !canUpdate && !canDelete && (
@@ -448,7 +409,7 @@ const AdminManagement = () => {
               variant="contained"
               startIcon={<PersonAdd />}
               onClick={() => setOpenDialog(true)}
-              sx={{ backgroundColor: '#00ADB5' }}
+              sx={{ backgroundColor: theme.palette.secondary.main }}
             >
               Add New Admin
             </Button>
@@ -458,7 +419,7 @@ const AdminManagement = () => {
         <TableContainer component={Paper} sx={{ boxShadow: 2 }}>
           <Table>
             <TableHead>
-              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+              <TableRow sx={{ backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[100] }}>
                 <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Role</TableCell>
@@ -479,6 +440,22 @@ const AdminManagement = () => {
                       color={getRoleColor(admin.role)}
                       size="small"
                       variant="outlined"
+                      sx={{
+                        color: theme.palette.text.primary,
+                        borderColor: theme.palette.mode === 'dark'
+                          ? theme.palette.secondary.main
+                          : theme.palette.grey[600],
+                        '& .MuiChip-label': {
+                          color: theme.palette.text.primary,
+                          fontWeight: 500
+                        },
+                        '&:hover': {
+                          backgroundColor: theme.palette.mode === 'dark'
+                            ? theme.palette.action.hover
+                            : theme.palette.grey[50],
+                          borderColor: theme.palette.secondary.main
+                        }
+                      }}
                     />
                   </TableCell>
                   <TableCell>{admin.createdBy?.name || 'System'}</TableCell>
@@ -535,7 +512,7 @@ const AdminManagement = () => {
               startIcon={<PersonAdd />}
               onClick={() => setOpenDialog(true)}
               sx={{ 
-                backgroundColor: '#00ADB5',
+                backgroundColor: theme.palette.secondary.main,
                 mt: 2
               }}
             >
@@ -601,7 +578,7 @@ const AdminManagement = () => {
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
           {canCreate && (
-            <Button onClick={handleCreateAdmin} variant="contained" sx={{ backgroundColor: '#00ADB5' }}>
+            <Button onClick={handleCreateAdmin} variant="contained" sx={{ backgroundColor: theme.palette.secondary.main }}>
               Create
             </Button>
           )}
@@ -663,7 +640,7 @@ const AdminManagement = () => {
         <DialogActions>
           <Button onClick={() => setOpenRoleDialog(false)}>Cancel</Button>
           {canUpdate && (
-            <Button onClick={handleCreateRole} variant="contained" sx={{ backgroundColor: '#00ADB5' }}>
+            <Button onClick={handleCreateRole} variant="contained" sx={{ backgroundColor: theme.palette.secondary.main }}>
               Create Role
             </Button>
           )}

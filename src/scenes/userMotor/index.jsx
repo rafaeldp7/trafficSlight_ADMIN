@@ -360,7 +360,7 @@ const UserMotor = () => {
                   py: 1.5,
                   backgroundColor: theme.palette.secondary.main,
                   '&:hover': {
-                    backgroundColor: theme.palette.secondary.dark,
+                    backgroundColor: theme.palette.secondary.light,
                   }
                 }}
               >

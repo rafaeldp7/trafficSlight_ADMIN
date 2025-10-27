@@ -272,7 +272,7 @@ const AdminTripsDashboard = () => {
     onChange={(e) => setSearchQuery(e.target.value)}
     size="small"
     sx={{
-      backgroundColor: theme.palette.mode === 'light' ? '#ffffff' : theme.palette.background.paper,
+      backgroundColor: theme.palette.background.paper,
       minWidth: 250
     }}
   />

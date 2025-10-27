@@ -61,7 +61,8 @@ const AddMotor = () => {
       console.log('Fetching motors from:', API_URL);
       console.log('Headers:', headers);
 
-      const res = await fetch(API_URL, { headers });
+      // Fetch ALL motors including deleted ones
+      const res = await fetch(`${API_URL}?includeDeleted=true&limit=1000`, { headers });
       console.log('Response status:', res.status);
       
       const data = await res.json();
@@ -562,7 +563,7 @@ const AddMotor = () => {
                   py: 1.5,
                   backgroundColor: theme.palette.secondary.main,
                   '&:hover': {
-                    backgroundColor: theme.palette.secondary.dark,
+                    backgroundColor: theme.palette.secondary.light,
                   },
                   '&:disabled': {
                     backgroundColor: alpha(theme.palette.secondary.main, 0.5),

@@ -26,7 +26,8 @@ import {
   Avatar,
   IconButton,
   Tooltip,
-  Badge
+  Badge,
+  useTheme
 } from '@mui/material';
 import {
   AdminPanelSettings,
@@ -56,6 +57,7 @@ import FlexBetween from 'components/FlexBetween';
 import { useSelector } from 'react-redux';
 
 const AdminDashboard = () => {
+  const theme = useTheme();
   const user = useSelector((state) => state.global.user);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -544,7 +546,7 @@ const AdminDashboard = () => {
             variant="contained"
             startIcon={<Download />}
             onClick={() => handleExportData('csv')}
-            sx={{ backgroundColor: '#00ADB5' }}
+            sx={{ backgroundColor: theme.palette.secondary.main }}
           >
             Export Data
           </Button>
@@ -555,7 +557,7 @@ const AdminDashboard = () => {
       <Grid container spacing={3} sx={{ mt: 2 }}>
         {/* Statistics Cards */}
         <Grid item xs={12} md={3}>
-          <Card sx={{ backgroundColor: '#00ADB5', color: 'white' }}>
+          <Card sx={{ backgroundColor: theme.palette.secondary.main, color: 'white' }}>
             <CardContent>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
@@ -571,7 +573,7 @@ const AdminDashboard = () => {
         </Grid>
 
         <Grid item xs={12} md={3}>
-          <Card sx={{ backgroundColor: '#4CAF50', color: 'white' }}>
+          <Card sx={{ backgroundColor: theme.palette.success.main, color: 'white' }}>
             <CardContent>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
@@ -587,7 +589,7 @@ const AdminDashboard = () => {
         </Grid>
 
         <Grid item xs={12} md={3}>
-          <Card sx={{ backgroundColor: '#FF9800', color: 'white' }}>
+          <Card sx={{ backgroundColor: theme.palette.warning.main, color: 'white' }}>
             <CardContent>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
@@ -603,7 +605,7 @@ const AdminDashboard = () => {
         </Grid>
 
         <Grid item xs={12} md={3}>
-          <Card sx={{ backgroundColor: '#9C27B0', color: 'white' }}>
+          <Card sx={{ backgroundColor: theme.palette.secondary.main, color: 'white' }}>
             <CardContent>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>

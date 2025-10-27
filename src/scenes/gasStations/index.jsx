@@ -330,7 +330,7 @@ const getStats = () => {
             sx={{
               backgroundColor: theme.palette.secondary.main,
               '&:hover': {
-                backgroundColor: theme.palette.secondary.dark,
+                backgroundColor: theme.palette.secondary.light,
               },
               px: 3,
               py: 1.5,
@@ -350,16 +350,12 @@ const getStats = () => {
                 height: '100%',
                 borderRadius: 2,
                 backgroundColor: theme.palette.mode === 'dark' 
-                  ? alpha(theme.palette.primary.dark, 0.4) 
-                  : alpha(theme.palette.primary.light, 0.3),
-                border: `1px solid ${theme.palette.mode === 'dark'
-                  ? alpha(theme.palette.primary.main, 0.3)
-                  : alpha(theme.palette.primary.main, 0.2)}`,
+                  ? alpha(theme.palette.primary.main, 0.4) 
+                  : alpha(theme.palette.primary.main, 0.3),
+                border: `1px solid ${alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.3 : 0.2)}`,
                 transition: 'all 0.3s ease',
                 '&:hover': {
-                  backgroundColor: theme.palette.mode === 'dark' 
-                    ? alpha(theme.palette.primary.dark, 0.5) 
-                    : alpha(theme.palette.primary.light, 0.4),
+                  backgroundColor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.5 : 0.4),
                   transform: 'translateY(-2px)'
                 }
               }}
@@ -378,7 +374,7 @@ const getStats = () => {
                   <Typography variant="h3" sx={{
                     color: theme.palette.mode === 'dark'
                       ? theme.palette.common.white
-                      : theme.palette.primary.dark,
+                      : theme.palette.text.primary,
                     fontWeight: 600
                   }}>
                     {getStats().totalStations}
@@ -778,7 +774,7 @@ const getStats = () => {
           padding: "6px 12px",
           borderRadius: "6px",
           border: "none",
-          backgroundColor: "#1976d2",
+          backgroundColor: theme.palette.info.main,
           color: "white",
           cursor: "pointer",
         }}

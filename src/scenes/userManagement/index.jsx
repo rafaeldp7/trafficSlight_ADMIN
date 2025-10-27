@@ -289,7 +289,7 @@ const UserManagement = () => {
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             sx={{
-              backgroundColor: theme.palette.mode === 'light' ? '#ffffff' : theme.palette.background.paper,
+              backgroundColor: theme.palette.background.paper,
               borderRadius: 1,
               '& .MuiOutlinedInput-root': {
                 '& fieldset': {
@@ -305,7 +305,7 @@ const UserManagement = () => {
               label="Filter by Barangay"
               onChange={(e) => setBarangayFilter(e.target.value)}
               sx={{
-                backgroundColor: theme.palette.mode === 'light' ? '#ffffff' : theme.palette.background.paper,
+                backgroundColor: theme.palette.background.paper,
                 borderRadius: 1,
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderColor: alpha(theme.palette.divider, 0.2),
@@ -330,7 +330,7 @@ const UserManagement = () => {
               backgroundColor: theme.palette.secondary.main,
               whiteSpace: 'nowrap',
               '&:hover': {
-                backgroundColor: theme.palette.secondary.dark,
+                backgroundColor: theme.palette.secondary.light,
               }
             }}
           >

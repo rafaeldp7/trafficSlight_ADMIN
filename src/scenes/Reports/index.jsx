@@ -101,8 +101,8 @@ const getFallbackMarkerIcon = () => {
 const ReportsDashboard = () => {
   const theme = useTheme();
   const { canRead, canCreate, canUpdate, canDelete, canOnlyView, userRoleDisplay } = usePermissions();
-  const { data: reportsData = [], isLoading, isError, error, refetch } = useGetReportsQuery(undefined, { pollingInterval: 10000 });
-  const { data: archivedData = [], isLoading: isLoadingArchived, isError: isArchivedError, error: archivedError } = useGetArchivedReportsQuery(undefined, { pollingInterval: 10000 });
+  const { data: reportsData = [], isLoading, isError, error, refetch } = useGetReportsQuery(undefined);
+  const { data: archivedData = [], isLoading: isLoadingArchived, isError: isArchivedError, error: archivedError } = useGetArchivedReportsQuery(undefined);
   
   // Separate state for markers to update independently of map
   const [markersData, setMarkersData] = useState([]);
@@ -436,12 +436,12 @@ const handleVerifybyAdmin = async (reportId = null) => {
               sx={{
                 color: theme.palette.mode === 'dark' 
                   ? theme.palette.primary.main 
-                  : theme.palette.primary.dark,
+                  : theme.palette.secondary.main,
                 '&:hover': {
                   backgroundColor: alpha(
                     theme.palette.mode === 'dark' 
                       ? theme.palette.primary.main 
-                      : theme.palette.primary.dark,
+                      : theme.palette.secondary.main,
                     0.1
                   )
                 }
@@ -472,16 +472,9 @@ const handleVerifybyAdmin = async (reportId = null) => {
             }
             title="Zoom to Report"
             sx={{
-              color: theme.palette.mode === 'dark' 
-                ? theme.palette.secondary.main 
-                : theme.palette.secondary.dark,
+              color: theme.palette.secondary.main,
               '&:hover': {
-                backgroundColor: alpha(
-                  theme.palette.mode === 'dark' 
-                    ? theme.palette.secondary.main 
-                    : theme.palette.secondary.dark,
-                  0.1
-                )
+                backgroundColor: alpha(theme.palette.secondary.main, 0.1)
               }
             }}
           >
@@ -663,9 +656,7 @@ const handleVerifybyAdmin = async (reportId = null) => {
                 borderColor: theme.palette.secondary.main,
                 color: isFullWidth ? 'white' : theme.palette.secondary.main,
                 '&:hover': {
-                  backgroundColor: isFullWidth 
-                    ? theme.palette.secondary.dark 
-                    : alpha(theme.palette.secondary.main, 0.1),
+                  backgroundColor: alpha(theme.palette.secondary.main, 0.1),
                 }
               }}
             >
@@ -1179,7 +1170,7 @@ const handleVerifybyAdmin = async (reportId = null) => {
                               padding: "6px 12px",
                               borderRadius: "6px",
                               border: "none",
-                              backgroundColor: "#1976d2",
+                              backgroundColor: theme.palette.info.main,
                               color: "white",
                               cursor: "pointer",
                             }}
@@ -1192,7 +1183,7 @@ const handleVerifybyAdmin = async (reportId = null) => {
                               padding: "6px 12px",
                               borderRadius: "6px",
                               border: "none",
-                              backgroundColor: "#4caf50",
+                              backgroundColor: theme.palette.success.main,
                               color: "white",
                               cursor: "pointer",
                             }}
@@ -1205,7 +1196,7 @@ const handleVerifybyAdmin = async (reportId = null) => {
                               padding: "6px 12px",
                               borderRadius: "6px",
                               border: "none",
-                              backgroundColor: "#f44336",
+                              backgroundColor: theme.palette.error.main,
                               color: "white",
                               cursor: "pointer",
                             }}
@@ -1568,7 +1559,7 @@ const handleVerifybyAdmin = async (reportId = null) => {
                               padding: "6px 12px",
                               borderRadius: "6px",
                               border: "none",
-                              backgroundColor: "#1976d2",
+                              backgroundColor: theme.palette.info.main,
                               color: "white",
                               cursor: "pointer",
                             }}
@@ -1581,7 +1572,7 @@ const handleVerifybyAdmin = async (reportId = null) => {
                               padding: "6px 12px",
                               borderRadius: "6px",
                               border: "none",
-                              backgroundColor: "#4caf50",
+                              backgroundColor: theme.palette.success.main,
                               color: "white",
                               cursor: "pointer",
                             }}
@@ -1594,7 +1585,7 @@ const handleVerifybyAdmin = async (reportId = null) => {
                               padding: "6px 12px",
                               borderRadius: "6px",
                               border: "none",
-                              backgroundColor: "#f44336",
+                              backgroundColor: theme.palette.error.main,
                               color: "white",
                               cursor: "pointer",
                             }}
@@ -1970,7 +1961,7 @@ const handleVerifybyAdmin = async (reportId = null) => {
                 py: 1.5,
                 backgroundColor: theme.palette.secondary.main,
                 "&:hover": {
-                  backgroundColor: theme.palette.secondary.dark,
+                  backgroundColor: theme.palette.secondary.light,
                 },
               }}
             >

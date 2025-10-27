@@ -220,27 +220,27 @@ const AdminLogs = () => {
 
   return (
     <Box m="1.5rem 2.5rem">
-      <FlexBetween>
+     
         <Header title="Admin Activity Logs" subtitle="Track admin actions and activities" />
-        <Button
+        {/* <Button
           startIcon={<Refresh />}
           onClick={handleRefresh}
           variant="outlined"
           sx={{ borderColor: '#00ADB5', color: '#00ADB5' }}
         >
           Refresh
-        </Button>
-      </FlexBetween>
+        </Button> */}
+     
 
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mt: 2, mb: 3 }}>
         <Grid item xs={12} sm={4}>
-          <Card sx={{ backgroundColor: '#f8f9fa' }}>
+          <Card sx={{ backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.paper : theme.palette.grey[50] }}>
             <CardContent>
               <Box display="flex" alignItems="center" gap={2}>
-                <History sx={{ color: '#00ADB5', fontSize: 40 }} />
+                <History sx={{ color: theme.palette.secondary.main, fontSize: 40 }} />
                 <Box>
-                  <Typography variant="h4" fontWeight="bold" color="#00ADB5">
+                  <Typography variant="h4" fontWeight="bold" color="secondary.main">
                     {stats.totalLogs}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -252,10 +252,10 @@ const AdminLogs = () => {
           </Card>
         </Grid>
         <Grid item xs={12} sm={4}>
-          <Card sx={{ backgroundColor: '#f8f9fa' }}>
+          <Card sx={{ backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.paper : theme.palette.grey[50] }}>
             <CardContent>
               <Box display="flex" alignItems="center" gap={2}>
-                <Typography variant="h4" fontWeight="bold" color="#00ADB5">
+                <Typography variant="h4" fontWeight="bold" color="secondary.main">
                   {stats.todayLogs}
                 </Typography>
                 <Box>
@@ -268,10 +268,10 @@ const AdminLogs = () => {
           </Card>
         </Grid>
         <Grid item xs={12} sm={4}>
-          <Card sx={{ backgroundColor: '#f8f9fa' }}>
+          <Card sx={{ backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.paper : theme.palette.grey[50] }}>
             <CardContent>
               <Box display="flex" alignItems="center" gap={2}>
-                <Typography variant="h4" fontWeight="bold" color="#00ADB5">
+                <Typography variant="h4" fontWeight="bold" color="secondary.main">
                   {stats.uniqueAdmins}
                 </Typography>
                 <Box>
@@ -337,7 +337,7 @@ const AdminLogs = () => {
       <TableContainer component={Paper} sx={{ boxShadow: 2 }}>
         <Table>
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+            <TableRow sx={{ backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[100] }}>
               <TableCell sx={{ fontWeight: 'bold' }}>Admin</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Action</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Resource</TableCell>

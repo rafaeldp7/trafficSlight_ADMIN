@@ -64,7 +64,7 @@ const Navbar = ({ user, isSidebarOpen, setIsSidebarOpen }) => {
     if (admin?.name) {
       return admin.name;
     }
-    return currentUser?.name || "Admin";
+    return currentUser?.firstName || "Admin";
   };
 
   // Helper function to get role display name
@@ -276,12 +276,6 @@ const Navbar = ({ user, isSidebarOpen, setIsSidebarOpen }) => {
               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
               transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
-              <MenuItem onClick={handleClose}>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Person sx={{ fontSize: 16 }} />
-                  <Typography variant="body2">Profile</Typography>
-                </Box>
-              </MenuItem>
               <MenuItem onClick={handleClose}>
                 <Box display="flex" alignItems="center" gap={1}>
                   <Security sx={{ fontSize: 16 }} />

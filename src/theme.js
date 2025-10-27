@@ -74,11 +74,14 @@ export const tokensDark = {
                 ...tokensDark.primary,
                 main: tokensDark.primary[400],
                 light: tokensDark.primary[400],
+                dark: tokensDark.primary[300],
                 contrastText: tokensDark.grey[10],
               },
               secondary: {
                 ...tokensDark.secondary,
                 main: tokensDark.secondary[300],
+                light: tokensDark.secondary[200],
+                dark: tokensDark.secondary[400],
                 contrastText: tokensDark.grey[0],
               },
               neutral: {
@@ -94,19 +97,41 @@ export const tokensDark = {
                 secondary: tokensDark.grey[300],
                 disabled: tokensDark.grey[500],
               },
+              success: {
+                main: "#4caf50",
+                light: "#81c784",
+                dark: "#388e3c",
+              },
+              error: {
+                main: "#f44336",
+                light: "#e57373",
+                dark: "#d32f2f",
+              },
+              warning: {
+                main: "#ff9800",
+                light: "#ffb74d",
+                dark: "#f57c00",
+              },
+              info: {
+                main: "#2196f3",
+                light: "#64b5f6",
+                dark: "#1976d2",
+              },
             }
           : {
               // palette values for light mode
               primary: {
                 ...tokensLight.primary,
-                main: tokensDark.grey[50],
-                light: tokensDark.grey[100],
-                contrastText: tokensDark.primary[700],
+                main: tokensDark.primary[900],
+                light: tokensDark.primary[800],
+                dark: tokensDark.primary[1000],
+                contrastText: tokensDark.grey[0],
               },
               secondary: {
                 ...tokensLight.secondary,
                 main: tokensDark.secondary[600],
-                light: tokensDark.secondary[700],
+                light: tokensDark.secondary[500],
+                dark: tokensDark.secondary[700],
                 contrastText: tokensDark.grey[0],
               },
               neutral: {
@@ -119,8 +144,28 @@ export const tokensDark = {
               },
               text: {
                 primary: tokensDark.primary[900],
-                secondary: tokensDark.grey[700],
+                secondary: tokensDark.primary[700],
                 disabled: tokensDark.grey[400],
+              },
+              success: {
+                main: "#4caf50",
+                light: "#81c784",
+                dark: "#388e3c",
+              },
+              error: {
+                main: "#f44336",
+                light: "#e57373",
+                dark: "#d32f2f",
+              },
+              warning: {
+                main: "#ff9800",
+                light: "#ffb74d",
+                dark: "#f57c00",
+              },
+              info: {
+                main: "#2196f3",
+                light: "#64b5f6",
+                dark: "#1976d2",
               },
             }),
       },
@@ -167,6 +212,70 @@ export const tokensDark = {
           styleOverrides: {
             root: {
               backgroundImage: 'none',
+              backgroundColor: mode === 'dark' 
+                ? tokensDark.primary[500] 
+                : tokensDark.grey[0],
+            },
+          },
+        },
+        MuiTableCell: {
+          styleOverrides: {
+            root: {
+              color: mode === 'dark' ? tokensDark.grey[10] : tokensDark.primary[900],
+            },
+            head: {
+              color: mode === 'dark' ? tokensDark.grey[10] : tokensDark.primary[900],
+              fontWeight: 600,
+            },
+          },
+        },
+        MuiButton: {
+          styleOverrides: {
+            root: {
+              textTransform: 'none',
+            },
+          },
+        },
+        MuiIconButton: {
+          styleOverrides: {
+            root: {
+              color: mode === 'dark' ? tokensDark.grey[10] : tokensDark.primary[900],
+              '&:hover': {
+                backgroundColor: mode === 'dark' 
+                  ? tokensDark.primary[600] 
+                  : tokensDark.grey[50],
+              },
+            },
+          },
+        },
+        MuiChip: {
+          styleOverrides: {
+            root: {
+              color: mode === 'dark' ? tokensDark.grey[10] : tokensDark.grey[0],
+            },
+          },
+        },
+        MuiTextField: {
+          styleOverrides: {
+            root: {
+              '& .MuiOutlinedInput-root': {
+                color: mode === 'dark' ? tokensDark.grey[10] : tokensDark.primary[900],
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: mode === 'dark' ? tokensDark.grey[300] : tokensDark.grey[400],
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: mode === 'dark' ? tokensDark.secondary[300] : tokensDark.secondary[500],
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: mode === 'dark' ? tokensDark.secondary[300] : tokensDark.secondary[600],
+                },
+              },
+              '& .MuiInputLabel-root': {
+                color: mode === 'dark' ? tokensDark.grey[300] : tokensDark.grey[600],
+              },
+              '& .MuiInputLabel-root.Mui-focused': {
+                color: mode === 'dark' ? tokensDark.secondary[300] : tokensDark.secondary[600],
+              },
             },
           },
         },

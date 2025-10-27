@@ -65,20 +65,24 @@ class AdminAuthService {
       });
       
       if (response.ok && (data.token || (data.data && data.data.token))) {
-        // Extract user data from response (handle both structures)
-        const userData = data.user || (data.data && data.data.user) || data;
+        // Extract admin data from response (prioritize admin over user)
+        const adminDataFromBackend = data.admin || data.data?.admin || data.user || data.data?.user;
+        
+        console.log('📦 Admin data from backend:', adminDataFromBackend);
+        console.log('📦 Full response data:', data);
+        console.log('📦 Response data.data:', data.data);
         
         // Create admin object with role for frontend compatibility
         const adminData = {
-          id: userData._id || userData.id,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          email: userData.email,
+          id: adminDataFromBackend.id || adminDataFromBackend._id,
+          firstName: adminDataFromBackend.firstName,
+          lastName: adminDataFromBackend.lastName,
+          email: adminDataFromBackend.email,
           role: {
-            name: userData.role || 'super_admin',
-            displayName: userData.roleInfo?.displayName || 'Super Administrator',
-            level: userData.roleInfo?.level || 100,
-            permissions: userData.roleInfo?.permissions || {
+            name: adminDataFromBackend.role || 'super_admin',
+            displayName: adminDataFromBackend.roleInfo?.displayName || 'Super Administrator',
+            level: adminDataFromBackend.roleInfo?.level || 100,
+            permissions: adminDataFromBackend.roleInfo?.permissions || {
               canCreate: true,
               canRead: true,
               canUpdate: true,
@@ -94,8 +98,8 @@ class AdminAuthService {
               canManageSettings: true
             }
           },
-          isActive: true,
-          lastLogin: new Date().toISOString()
+          isActive: adminDataFromBackend.isActive ?? true,
+          lastLogin: adminDataFromBackend.lastLogin || new Date().toISOString()
         };
         
         // Extract token from response (handle both structures)

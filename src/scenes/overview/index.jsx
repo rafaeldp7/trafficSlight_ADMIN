@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import FlexBetween from "components/FlexBetween";
 import Header from "components/Header";
-import { Box, Typography, useMediaQuery } from "@mui/material";
+import { Box, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { Line } from "react-chartjs-2";
 import StatBox from "components/StatBox";
 import { useGetReportsQuery, useGetDashboardOverviewQuery, useGetDashboardStatsQuery, useGetAdminDashboardQuery, useGetTripsQuery, useGetGasStationsQuery, useGetUsersQuery, useGetMotorsQuery, useGetTotalUsersQuery, useGetUsersThisMonthQuery, useGetTotalMotorsQuery, useGetMotorModelsQuery, useGetUserGrowthQuery } from "state/api";
@@ -29,6 +29,7 @@ ChartJS.register(
 );
 
 const Overview = () => {
+  const theme = useTheme();
   const isNonMediumScreens = useMediaQuery("(min-width: 1200px)");
   const user = useSelector((state) => state.global.user);
 
@@ -48,7 +49,6 @@ const Overview = () => {
 
   // Get real-time reports data using RTK Query with error handling
   const { data: reportsData = [], error: reportsError, isLoading: reportsLoading } = useGetReportsQuery(undefined, { 
-    pollingInterval: 10000,
     skip: false, // Always try to fetch, but handle errors gracefully
     refetchOnMountOrArgChange: true,
     refetchOnFocus: false,
@@ -508,12 +508,12 @@ const Overview = () => {
 
   return (
     <Box m="1.5rem 2.5rem">
-      <FlexBetween>
+
         <Header 
           title={`Welcome, ${user?.firstName || 'Admin'}!`} 
           subtitle={`${user?.role?.displayName || 'Administrator'} Dashboard`} 
         />
-      </FlexBetween>
+ 
 
       <Box
         mt="20px"
@@ -610,8 +610,8 @@ const Overview = () => {
                   label: "Users",
                   data: userGrowth,
                   fill: false,
-                  backgroundColor: "#00ADB5",
-                  borderColor: "#00ADB5",
+                  backgroundColor: theme.palette.secondary.main,
+                  borderColor: theme.palette.secondary.main,
                 },
               ],
             }}
